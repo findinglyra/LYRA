@@ -1,0 +1,254 @@
+/* Tailwind CSS directives - these are processed by the Tailwind CSS processor */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Root variables for colors and theming */
+:root {
+  --background: 206 100% 98%;
+  --foreground: 210 40% 18%;
+
+  --primary: 175 80% 45%;  /* Turquoise */
+  --primary-muted: 175 70% 90%;
+  --primary-foreground: 0 0% 100%;
+
+  --accent: 200 70% 60%;   /* Powder Blue */
+  --accent-foreground: 210 40% 18%;
+
+  --duck-egg: 180 56% 92%; /* Duck Egg */
+  --deep-blue: 210 80% 20%; /* Deep blue for text on white */
+  
+  /* Cosmic theme colors */
+  --dark-blue: 220 70% 5%;
+  --pale-yellow: 45 100% 80%;
+  --vibrant-yellow: 45 100% 50%;
+  --cosmic-purple: 280 70% 50%;
+  --stellar-blue: 220 80% 60%;
+  --nebula-pink: 330 80% 60%;
+
+  --border: 220 13% 91%;
+  --input: 220 13% 91%;
+  --ring: 224 71.4% 4.1%;
+  --radius: 0.75rem;
+}
+
+/* Sleek text and heading styles */
+.sleek-heading {
+  letter-spacing: -0.02em;
+  font-weight: 700;
+}
+
+.sleek-text {
+  line-height: 1.6;
+}
+
+/* Logo Styling */
+.lyra-logo {
+  background: linear-gradient(to right, hsl(var(--primary)), hsl(var(--accent)));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  font-size: 4rem;
+  text-shadow: 0 0 15px rgba(102, 204, 204, 0.3);
+  position: relative;
+  display: inline-block;
+}
+
+/* Cosmic stars background */
+.cosmic-stars {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  background-image: 
+    radial-gradient(1px 1px at 50px 160px, white, rgba(0,0,0,0)),
+    radial-gradient(1px 1px at 40px 220px, rgba(255, 215, 120, 0.9), rgba(0,0,0,0)),
+    radial-gradient(2px 2px at 170px 80px, rgba(255, 210, 100, 0.8), rgba(0,0,0,0)),
+    radial-gradient(2px 2px at 150px 320px, rgba(255, 255, 255, 0.8), rgba(0,0,0,0)),
+    radial-gradient(1px 1px at 260px 40px, white, rgba(0,0,0,0)),
+    radial-gradient(1px 1px at 340px 360px, rgba(255, 215, 120, 0.8), rgba(0,0,0,0)),
+    radial-gradient(2px 2px at 240px 180px, white, rgba(0,0,0,0)),
+    radial-gradient(1px 1px at 220px 440px, white, rgba(0,0,0,0));
+  background-size: 600px 600px;
+  animation: twinkle 8s linear infinite;
+  z-index: 1;
+  mask-image: radial-gradient(ellipse at center, rgba(0, 0, 0, 0.9) 0%, transparent 100%);
+  -webkit-mask-image: radial-gradient(ellipse at center, rgba(0, 0, 0, 0.9) 0%, transparent 100%);
+  mask-size: 200% 200%;
+  mask-position: center;
+  -webkit-mask-size: 200% 200%;
+  -webkit-mask-position: center;
+}
+
+@keyframes twinkle {
+  0% {
+    opacity: 0.7;
+    background-position: 0 0;
+  }
+  50% {
+    opacity: 0.9;
+  }
+  100% {
+    opacity: 0.7;
+    background-position: 100px 100px;
+  }
+}
+
+/* Glass card effect */
+.glass-card {
+  background: rgba(5, 10, 30, 0.6);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  border: 1px solid rgba(255, 215, 80, 0.15);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+}
+
+/* Glow effect */
+.glow-card {
+  box-shadow: 
+    0 0 15px rgba(255, 215, 80, 0.1),
+    0 0 30px rgba(255, 215, 80, 0.08),
+    0 8px 32px rgba(0, 0, 0, 0.15);
+}
+
+/* Blue shadow for cards */
+.blue-shadow {
+  box-shadow: 
+    0 10px 30px rgba(255, 215, 80, 0.1),
+    0 4px 10px rgba(0, 0, 0, 0.1);
+}
+
+/* Sleek button styles */
+.sleek-button {
+  background: linear-gradient(135deg, hsla(var(--vibrant-yellow), 0.9), hsla(var(--primary), 0.9));
+  border: none;
+  color: white;
+  font-weight: 600;
+  box-shadow: 0 4px 10px rgba(255, 215, 0, 0.15);
+  transition: all 0.2s ease;
+}
+
+.sleek-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 14px rgba(255, 215, 0, 0.2);
+  opacity: 0.95;
+}
+
+/* Sleek input styles */
+.sleek-input {
+  background: rgba(5, 15, 40, 0.15) !important;
+  border: 1px solid rgba(255, 215, 80, 0.2) !important;
+  color: white !important;
+}
+
+.sleek-input::placeholder {
+  color: rgba(255, 255, 255, 0.5) !important;
+}
+
+.sleek-input:focus {
+  background: rgba(5, 15, 40, 0.25) !important;
+  border-color: rgba(255, 215, 80, 0.4) !important;
+  box-shadow: 0 0 0 2px rgba(255, 215, 80, 0.15) !important;
+}
+
+/* Cosmic backgrounds for all pages */
+.cosmic-bg {
+  background-image: url('/gettyimages-678545430-2048x2048.png');
+  background-size: cover;
+  background-position: center;
+  background-attachment: fixed;
+  position: relative;
+}
+
+.cosmic-bg::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(135deg, rgba(5, 15, 40, 0.7), rgba(10, 25, 50, 0.75));
+  z-index: 0;
+}
+
+.cosmic-bg > * {
+  position: relative;
+  z-index: 1;
+}
+
+/* Star constellation effects */
+.lyra-constellation {
+  position: absolute;
+  width: 200px;
+  height: 200px;
+  background-image: 
+    radial-gradient(2px 2px at 30px 20px, white, rgba(0,0,0,0)),
+    radial-gradient(2px 2px at 80px 40px, white, rgba(0,0,0,0)),
+    radial-gradient(2px 2px at 120px 70px, white, rgba(0,0,0,0)),
+    radial-gradient(3px 3px at 130px 110px, hsl(var(--primary)), rgba(0,0,0,0)),
+    radial-gradient(2px 2px at 180px 50px, white, rgba(0,0,0,0));
+  background-size: 200px 200px;
+  background-repeat: no-repeat;
+  z-index: 2;
+  opacity: 0.5;
+}
+
+/* Cosmic form styles */
+.cosmic-input {
+  background: rgba(255, 255, 255, 0.15) !important;
+  border: 1px solid rgba(255, 255, 255, 0.25) !important;
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  color: white !important;
+  transition: all 0.2s ease-in-out;
+}
+
+.cosmic-input:focus {
+  background: rgba(255, 255, 255, 0.2) !important;
+  border-color: hsla(var(--primary), 0.5) !important;
+  box-shadow: 0 0 15px hsla(var(--primary), 0.2) !important;
+}
+
+.cosmic-label {
+  color: rgba(255, 255, 255, 0.95);
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+}
+
+.cosmic-select-trigger {
+  background: rgba(255, 255, 255, 0.15) !important;
+  border: 1px solid rgba(255, 255, 255, 0.25) !important;
+  color: white !important;
+}
+
+.cosmic-select-content {
+  background: rgba(15, 25, 50, 0.95) !important;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2) !important;
+}
+
+/* Solid overlay card for better visibility */
+.solid-overlay-card {
+  background: rgba(20, 30, 60, 0.85) !important;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+}
+
+@layer base {
+  * {
+    /* Apply border styles - Tailwind directive */
+    @apply border-border;
+  }
+  body {
+    /* Apply background and text styles - Tailwind directive */
+    @apply bg-background text-foreground;
+  }
+}
