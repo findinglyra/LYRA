@@ -50,10 +50,14 @@
   color: transparent;
   font-weight: 800;
   letter-spacing: -0.03em;
-  font-size: 4rem;
+  /* Removing the fixed font-size to allow Tailwind classes to control size */
   text-shadow: 0 0 15px rgba(102, 204, 204, 0.3);
   position: relative;
   display: inline-block;
+  /* Adding line-height property to ensure text doesn't get cut off */
+  line-height: 1.2;
+  /* Adding overflow handling */
+  overflow: visible;
 }
 
 /* Cosmic stars background */
