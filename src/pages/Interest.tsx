@@ -249,7 +249,7 @@ const Interest = () => {
   const renderPersonalInfo = () => (
     <div className="space-y-4">
       <div className="space-y-2">
-        <Label htmlFor="email" className="cosmic-label">
+        <Label htmlFor="email" className="cosmic-label text-sm sm:text-base">
           <Mail className="h-4 w-4 inline mr-2" />
           Email Address
         </Label>
@@ -264,12 +264,12 @@ const Interest = () => {
           required
         />
         {errors.email && (
-          <p className="text-red-500 text-sm mt-1">{errors.email}</p>
+          <p className="text-red-500 text-xs sm:text-sm mt-1">{errors.email}</p>
         )}
       </div>
       
       <div className="space-y-2">
-        <Label htmlFor="name" className="cosmic-label">
+        <Label htmlFor="name" className="cosmic-label text-sm sm:text-base">
           <User className="h-4 w-4 inline mr-2" />
           Full Name
         </Label>
@@ -283,12 +283,12 @@ const Interest = () => {
           required
         />
         {errors.name && (
-          <p className="text-red-500 text-sm mt-1">{errors.name}</p>
+          <p className="text-red-500 text-xs sm:text-sm mt-1">{errors.name}</p>
         )}
       </div>
       
       <div className="space-y-2">
-        <Label htmlFor="age" className="cosmic-label">
+        <Label htmlFor="age" className="cosmic-label text-sm sm:text-base">
           <Calendar className="h-4 w-4 inline mr-2" />
           Age
         </Label>
@@ -305,7 +305,7 @@ const Interest = () => {
           required
         />
         {errors.age && (
-          <p className="text-red-500 text-sm mt-1">{errors.age}</p>
+          <p className="text-red-500 text-xs sm:text-sm mt-1">{errors.age}</p>
         )}
       </div>
     </div>
@@ -314,7 +314,7 @@ const Interest = () => {
   const renderMusicPreferences = () => (
     <div className="space-y-4">
       <div className="space-y-2">
-        <Label htmlFor="musicPlatform" className="cosmic-label">
+        <Label htmlFor="musicPlatform" className="cosmic-label text-sm sm:text-base">
           <Music className="h-4 w-4 inline mr-2" />
           Preferred Music Platform
         </Label>
@@ -336,57 +336,57 @@ const Interest = () => {
           </SelectContent>
         </Select>
         {errors.musicPlatform && (
-          <p className="text-red-500 text-sm mt-1">{errors.musicPlatform}</p>
+          <p className="text-red-500 text-xs sm:text-sm mt-1">{errors.musicPlatform}</p>
         )}
       </div>
       
       <div className="space-y-2">
-        <Label className="cosmic-label">
+        <Label className="cosmic-label text-sm sm:text-base">
           <Music className="h-4 w-4 inline mr-2" />
           Favorite Music Genres
         </Label>
-        <p className="text-sm text-white/70">
+        <p className="text-xs sm:text-sm text-white/70">
           Choose genres that define your cosmic vibration
         </p>
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 mt-2">
+        <div className="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-3 gap-2 mt-2">
           {musicGenres.map((genre) => (
             <Button
               key={genre}
               type="button"
               variant={formData.genrePreference.includes(genre) ? "default" : "outline"}
               onClick={() => handleGenreToggle(genre)}
-              className={`justify-start ${formData.genrePreference.includes(genre) ? "bg-[hsl(var(--primary))] hover:bg-[hsl(var(--primary-hover))]" : "hover:bg-[hsla(var(--primary),0.1)] border-[rgba(255,255,255,0.2)] rounded-lg"}`}
+              className={`justify-start text-xs sm:text-sm ${formData.genrePreference.includes(genre) ? "bg-[hsl(var(--primary))] hover:bg-[hsl(var(--primary-hover))]" : "hover:bg-[hsla(var(--primary),0.1)] border-[rgba(255,255,255,0.2)] rounded-lg"}`}
               size="sm"
             >
-              <Music className="mr-2 h-3 w-3" />
+              <Music className="mr-1 sm:mr-2 h-3 w-3" />
               {genre}
             </Button>
           ))}
         </div>
         {errors.genrePreference && (
-          <p className="text-red-500 text-sm mt-1">{errors.genrePreference}</p>
+          <p className="text-red-500 text-xs sm:text-sm mt-1">{errors.genrePreference}</p>
         )}
       </div>
       
       <div className="space-y-2">
-        <Label className="cosmic-label">
+        <Label className="cosmic-label text-sm sm:text-base">
           <Sparkles className="h-4 w-4 inline mr-2" />
           When do you usually listen to music?
         </Label>
-        <p className="text-sm text-white/70">
+        <p className="text-xs sm:text-sm text-white/70">
           Select all that apply
         </p>
-        <div className="grid grid-cols-2 gap-2 mt-2">
+        <div className="grid grid-cols-1 xs:grid-cols-2 gap-2 mt-2">
           {listeningMoods.map((mood) => (
             <Button
               key={mood}
               type="button"
               variant={formData.listeningMood.includes(mood) ? "default" : "outline"}
               onClick={() => handleMoodToggle(mood)}
-              className={`justify-start ${formData.listeningMood.includes(mood) ? "bg-[hsl(var(--primary))] hover:bg-[hsl(var(--primary-hover))]" : "hover:bg-[hsla(var(--primary),0.1)] border-[rgba(255,255,255,0.2)] rounded-lg"}`}
+              className={`justify-start text-xs sm:text-sm ${formData.listeningMood.includes(mood) ? "bg-[hsl(var(--primary))] hover:bg-[hsl(var(--primary-hover))]" : "hover:bg-[hsla(var(--primary),0.1)] border-[rgba(255,255,255,0.2)] rounded-lg"}`}
               size="sm"
             >
-              <Sparkles className="mr-2 h-3 w-3" />
+              <Sparkles className="mr-1 sm:mr-2 h-3 w-3" />
               {mood}
             </Button>
           ))}
@@ -398,7 +398,7 @@ const Interest = () => {
   const renderAstroDetails = () => (
     <div className="space-y-4">
       <div className="space-y-2">
-        <Label htmlFor="birthDate" className="cosmic-label">
+        <Label htmlFor="birthDate" className="cosmic-label text-sm sm:text-base">
           <Calendar className="h-4 w-4 inline mr-2" />
           Birth Date
         </Label>
@@ -412,12 +412,12 @@ const Interest = () => {
           className={`cosmic-input ${errors.birthDate ? "border-red-500" : ""}`}
         />
         {errors.birthDate && (
-          <p className="text-red-500 text-sm mt-1">{errors.birthDate}</p>
+          <p className="text-red-500 text-xs sm:text-sm mt-1">{errors.birthDate}</p>
         )}
       </div>
       
       <div className="space-y-2">
-        <Label htmlFor="birthLocation" className="cosmic-label">
+        <Label htmlFor="birthLocation" className="cosmic-label text-sm sm:text-base">
           <Globe className="h-4 w-4 inline mr-2" />
           Birth Location (Country)
         </Label>
@@ -428,7 +428,7 @@ const Interest = () => {
           <SelectTrigger className={`cosmic-select-trigger ${errors.birthLocation ? "border-red-500" : ""}`}>
             <SelectValue placeholder="Select your country" />
           </SelectTrigger>
-          <SelectContent className="max-h-80 cosmic-select-content">
+          <SelectContent className="max-h-60 sm:max-h-80 cosmic-select-content">
             <SelectGroup>
               <SelectLabel>Africa</SelectLabel>
               <SelectItem value="Algeria">Algeria</SelectItem>
@@ -466,7 +466,7 @@ const Interest = () => {
           </SelectContent>
         </Select>
         {errors.birthLocation && (
-          <p className="text-red-500 text-sm mt-1">{errors.birthLocation}</p>
+          <p className="text-red-500 text-xs sm:text-sm mt-1">{errors.birthLocation}</p>
         )}
       </div>
       
@@ -484,7 +484,7 @@ const Interest = () => {
       )}
       
       <div className="space-y-2">
-        <Label htmlFor="zodiacSign" className="cosmic-label">
+        <Label htmlFor="zodiacSign" className="cosmic-label text-sm sm:text-base">
           <Star className="h-4 w-4 inline mr-2" />
           Zodiac Sign
         </Label>
@@ -502,7 +502,7 @@ const Interest = () => {
           </SelectContent>
         </Select>
         {errors.zodiacSign && (
-          <p className="text-red-500 text-sm mt-1">{errors.zodiacSign}</p>
+          <p className="text-red-500 text-xs sm:text-sm mt-1">{errors.zodiacSign}</p>
         )}
       </div>
     </div>
@@ -511,11 +511,11 @@ const Interest = () => {
   const renderFinalForm = () => (
     <div className="space-y-4">
       <div className="space-y-2">
-        <Label className="cosmic-label">
+        <Label className="cosmic-label text-sm sm:text-base">
           <Star className="h-4 w-4 inline mr-2" />
           Past Partners' Zodiac Signs (if known)
         </Label>
-        <p className="text-sm text-white/70">
+        <p className="text-xs sm:text-sm text-white/70">
           Select any that apply
         </p>
         <div className="grid grid-cols-3 gap-2 mt-2">
@@ -525,10 +525,10 @@ const Interest = () => {
               type="button"
               variant={formData.pastPartnerSigns.includes(sign.toLowerCase()) ? "default" : "outline"}
               onClick={() => handleZodiacToggle(sign.toLowerCase())}
-              className={`justify-start ${formData.pastPartnerSigns.includes(sign.toLowerCase()) ? "bg-[hsl(var(--primary))] hover:bg-[hsl(var(--primary-hover))]" : "hover:bg-[hsla(var(--primary),0.1)] border-[rgba(255,255,255,0.2)] rounded-lg"}`}
+              className={`justify-start text-xs sm:text-sm ${formData.pastPartnerSigns.includes(sign.toLowerCase()) ? "bg-[hsl(var(--primary))] hover:bg-[hsl(var(--primary-hover))]" : "hover:bg-[hsla(var(--primary),0.1)] border-[rgba(255,255,255,0.2)] rounded-lg"}`}
               size="sm"
             >
-              <Star className="mr-2 h-3 w-3" />
+              <Star className="mr-1 sm:mr-2 h-3 w-3" />
               {sign}
             </Button>
           ))}
@@ -599,99 +599,88 @@ const Interest = () => {
   };
 
   const renderSuccessMessage = () => (
-    <Card className="solid-overlay-card w-full rounded-2xl">
-      <CardHeader className="text-center">
-        <div className="mx-auto rounded-full bg-[hsla(var(--primary),0.2)] w-16 h-16 flex items-center justify-center mb-4">
-          <CheckCircle className="h-8 w-8 text-[hsl(var(--primary))]" />
+    <Card className="cosmic-card overflow-hidden">
+      <CardContent className="p-6 sm:p-8 flex flex-col items-center justify-center text-center">
+        <div className="mb-6">
+          <CheckCircle className="text-green-500 h-16 w-16 mb-4" />
+          <h2 className="text-xl sm:text-2xl font-bold text-white mb-2">Your Cosmic Journey Begins!</h2>
+          <p className="text-white/80 text-sm sm:text-base">
+            Thank you for sharing your musical and astrological preferences. We'll be in touch soon with your cosmic matches.
+          </p>
         </div>
-        <CardTitle className="text-3xl font-bold text-white">Cosmic Connection Initiated!</CardTitle>
-        <CardDescription className="text-white/80 text-lg mt-2">
-          Your stellar profile has been registered
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="text-center">
-        <p className="text-white/90 mb-8">
-          Thank you for joining the Lyra waitlist. We'll analyze your music and astrological data 
-          to find your perfect match. Stay tuned for updates on your cosmic journey!
-        </p>
-        <Button 
-          className="sleek-button px-8 py-2 h-auto"
+        
+        <Button
           onClick={() => navigate("/")}
+          className="sleek-button bg-[hsl(var(--primary))] hover:bg-[hsl(var(--primary-hover))] text-white w-full sm:w-auto"
         >
-          Return to Orbit
-          <Star className="ml-2 h-4 w-4" />
+          Return to Homepage
+          <ArrowRight className="ml-2 h-4 w-4" />
         </Button>
       </CardContent>
     </Card>
   );
 
   return (
-    <div className="cosmic-bg min-h-screen flex flex-col">
-      {/* Cosmic stars */}
-      <div className="cosmic-stars"></div>
+    <div className="cosmic-bg min-h-screen py-6 sm:py-10 px-3 sm:px-6">
+      {/* Cosmic effects */}
+      <div className="cosmic-stars opacity-70"></div>
+      <div className="lyra-constellation top-20 right-20 opacity-60"></div>
+      <div className="lyra-constellation bottom-40 left-10 opacity-60"></div>
       
-      {/* Constellation effects */}
-      <div className="lyra-constellation top-20 right-20"></div>
-      <div className="lyra-constellation bottom-40 left-10"></div>
-      
-      <div className="container mx-auto px-4 py-8 flex-1 flex flex-col">
-        <div className="max-w-4xl mx-auto w-full">
-          {/* Header with logo */}
-          <header className="flex justify-center mb-8 pt-4">
-            <div className="flex items-center gap-2">
-              <span className="lyra-logo text-2xl px-3 py-1 rounded-lg backdrop-blur-md">Lyra</span>
-            </div>
-          </header>
-          
-          {/* Back button */}
-          <Button
-            variant="ghost"
-            onClick={() => navigate("/")}
-            className="text-white hover:text-[hsl(var(--primary))] bg-black/20 backdrop-blur-md rounded-lg mb-6 text-sm px-3 py-1 h-auto"
-          >
-            <ArrowLeft className="mr-2 h-4 w-4" />
-            Back to Home
-          </Button>
-          
-          {isSubmitSuccess ? (
-            // Success screen
-            renderSuccessMessage()
-          ) : (
-            // Form card
-            <Card className="solid-overlay-card w-full rounded-2xl">
-              <CardHeader>
-                <div className="flex justify-between items-center mb-2">
-                  <div className="flex items-center">
-                    {currentStep === 1 && <User className="h-5 w-5 mr-2 text-[hsl(var(--primary))]" />}
-                    {currentStep === 2 && <Music className="h-5 w-5 mr-2 text-[hsl(var(--primary))]" />}
-                    {currentStep === 3 && <Star className="h-5 w-5 mr-2 text-[hsl(var(--primary))]" />}
-                    {currentStep === 4 && <Heart className="h-5 w-5 mr-2 text-[hsl(var(--primary))]" />}
-                  </div>
-                  <div className="text-sm text-white/70">
-                    Step {currentStep} of 4
-                  </div>
-                </div>
-                <CardTitle className="text-2xl font-bold text-white">
-                  {currentStep === 1 && "Personal Details"}
-                  {currentStep === 2 && "Musical Preferences"}
-                  {currentStep === 3 && "Astrological Profile"}
-                  {currentStep === 4 && "Final Questions"}
-                </CardTitle>
-                <CardDescription className="text-white/80">
-                  {currentStep === 1 && "Tell us about yourself"}
-                  {currentStep === 2 && "Share your musical tastes"}
-                  {currentStep === 3 && "Your cosmic influences"}
-                  {currentStep === 4 && "Almost there!"}
-                </CardDescription>
-              </CardHeader>
+      {/* Back to home link */}
+      <Button
+        variant="ghost"
+        onClick={() => navigate("/")}
+        className="absolute top-4 left-4 text-white/80 hover:text-white hover:bg-white/10 p-2 h-auto rounded-full"
+      >
+        <ArrowLeft className="h-5 w-5" />
+        <span className="sr-only">Back to home</span>
+      </Button>
+
+      {/* Main content */}
+      <div className="container mx-auto max-w-md sm:max-w-lg md:max-w-xl">
+        {isSubmitSuccess ? (
+          // Success screen
+          renderSuccessMessage()
+        ) : (
+          // Form card
+          <Card className="cosmic-card overflow-hidden">
+            <CardHeader className="pb-0 sm:pb-2 pt-6 px-6 sm:pt-8 sm:px-8">
+              <CardTitle className="text-xl sm:text-2xl text-white flex items-center gap-2">
+                <Star className="h-5 w-5 text-[hsl(var(--primary))]" />
+                <span>Join Lyra Waitlist</span>
+              </CardTitle>
+              <CardDescription className="text-white/70 text-sm sm:text-base mt-1">
+                Step {currentStep} of 4: {
+                  currentStep === 1 ? "Personal Information" :
+                  currentStep === 2 ? "Music Preferences" :
+                  currentStep === 3 ? "Astrological Details" :
+                  "Finishing Up"
+                }
+              </CardDescription>
+            </CardHeader>
+            
+            <CardContent className="p-6 sm:p-8 pt-4 sm:pt-6">
+              {/* Progress bar */}
+              <div className="w-full bg-white/10 h-1 rounded-full mb-6">
+                <div
+                  className="bg-[hsl(var(--primary))] h-1 rounded-full transition-all duration-300"
+                  style={{ width: `${(currentStep / 4) * 100}%` }}
+                ></div>
+              </div>
               
-              <CardContent className="space-y-4">
-                {renderFormStep()}
+              {/* Form content */}
+              <form onSubmit={(e) => e.preventDefault()}>
+                {currentStep === 1 && renderPersonalInfo()}
+                {currentStep === 2 && renderMusicPreferences()}
+                {currentStep === 3 && renderAstroDetails()}
+                {currentStep === 4 && renderFinalForm()}
+                
                 {renderFormActions()}
-              </CardContent>
-            </Card>
-          )}
-        </div>
+              </form>
+            </CardContent>
+          </Card>
+        )}
       </div>
     </div>
   );

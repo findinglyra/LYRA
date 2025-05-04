@@ -166,6 +166,9 @@
   background-position: center;
   background-attachment: fixed;
   position: relative;
+  image-rendering: -webkit-optimize-contrast; /* For Webkit browsers */
+  image-rendering: crisp-edges; /* For Firefox */
+  -ms-interpolation-mode: nearest-neighbor; /* For IE */
 }
 
 .cosmic-bg::before {
@@ -175,8 +178,10 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background: linear-gradient(135deg, rgba(5, 15, 40, 0.7), rgba(10, 25, 50, 0.75));
+  background: linear-gradient(135deg, rgba(5, 15, 40, 0.65), rgba(10, 25, 50, 0.7));
   z-index: 0;
+  backdrop-filter: none; /* Remove any blurring effects */
+  -webkit-backdrop-filter: none;
 }
 
 .cosmic-bg > * {
