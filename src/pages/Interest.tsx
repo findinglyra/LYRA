@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
@@ -55,6 +55,10 @@ const Interest = () => {
     message: ''
   });
 
+  // Use refs for immediate slider updates
+  const musicSliderRef = useRef<HTMLInputElement>(null);
+  const astrologySliderRef = useRef<HTMLInputElement>(null);
+
   // Event handlers
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -65,12 +69,37 @@ const Interest = () => {
     setFormData((prev) => ({ ...prev, [name]: checked }));
   };
 
+  // Handle slider value change - optimized for immediate response
   const handleSliderChange = (name: string, value: number) => {
-    setFormData(prev => ({
+    // Direct state update for immediate response
+    setFormData((prev) => ({
       ...prev,
       [name]: value
     }));
   };
+
+  // Direct slider manipulation for better responsiveness
+  useEffect(() => {
+    const setupSlider = (slider: HTMLInputElement | null, name: string) => {
+      if (!slider) return;
+      
+      const updateValue = (e: Event) => {
+        const value = parseInt((e.target as HTMLInputElement).value);
+        handleSliderChange(name, value);
+      };
+      
+      slider.addEventListener('input', updateValue);
+      return () => slider.removeEventListener('input', updateValue);
+    };
+    
+    const musicCleanup = setupSlider(musicSliderRef.current, 'musicInterestLevel');
+    const astrologyCleanup = setupSlider(astrologySliderRef.current, 'astrologyInterestLevel');
+    
+    return () => {
+      if (musicCleanup) musicCleanup();
+      if (astrologyCleanup) astrologyCleanup();
+    };
+  }, []);
 
   // Validation
   const validateForm = (): boolean => {
@@ -340,13 +369,13 @@ const Interest = () => {
 
   return (
     <div className="min-h-screen" style={{
-      backgroundImage: "url('/index9.jpeg')",
+      backgroundImage: "url('/index8.jpeg')",
       backgroundSize: "cover",
       backgroundPosition: "center",
       backgroundAttachment: "fixed"
     }}>
-      {/* Dark overlay for text contrast - reduced opacity for clearer background */}
-      <div className="absolute inset-0 bg-gradient-to-br from-[rgba(0,0,0,0.5)] to-[rgba(0,10,30,0.6)] z-0"></div>
+      {/* Lighter overlay for better image clarity while maintaining text readability */}
+      <div className="absolute inset-0 bg-gradient-to-br from-[rgba(0,0,0,0.35)] to-[rgba(0,10,30,0.45)] z-0"></div>
       {/* Cosmic effects */}
       <div className="cosmic-stars opacity-70"></div>
       <div className="lyra-constellation top-20 right-20 opacity-60 xs:hidden"></div>
@@ -355,26 +384,26 @@ const Interest = () => {
       {/* Back to home link */}
       <Button
         onClick={() => navigate("/")}
-        variant="ghost"
-        className="absolute top-4 left-4 text-white hover:text-white hover:bg-white/10 z-10"
+        variant="outline" 
+        className="absolute top-4 left-4 text-white bg-black/20 border border-white/30 hover:bg-white/20 hover:border-white hover:text-white transition-all z-10 shadow-sm"
       >
         <ArrowLeft className="mr-2 h-4 w-4" />
         Back to Home
       </Button>
       
       <div className="container mx-auto max-w-sm relative z-10 py-6">
-        <h1 className="text-lg xs:text-xl sm:text-2xl font-bold text-center mb-3 text-white">
+        <h1 className="text-lg xs:text-xl sm:text-2xl font-bold text-center mb-3 text-white text-shadow-md">
           Join the LYRA Experience
         </h1>
         
         {isSuccess ? (
           renderSuccessMessage()
         ) : (
-          <Card className="cosmic-card shadow-lg border border-white/20">
-            <CardContent className="p-2 space-y-2">
+          <Card className="cosmic-card shadow-xl border border-white/30 backdrop-blur-[2px] bg-black/40">
+            <CardContent className="p-3 space-y-3">
               <div className="space-y-2">
                 <div className="space-y-1">
-                  <Label htmlFor="email" className="cosmic-label text-white text-xs">
+                  <Label htmlFor="email" className="cosmic-label text-white text-xs font-semibold">
                     Email
                   </Label>
                   <Input
@@ -383,16 +412,16 @@ const Interest = () => {
                     name="email"
                     value={formData.email}
                     onChange={handleInputChange}
-                    className="cosmic-input h-8 text-sm"
+                    className="cosmic-input h-8 text-sm bg-black/50 border-white/30 focus:border-white/60 text-white"
                     placeholder="your.email@example.com"
                   />
                   {formErrors.email && (
-                    <div className="text-xs text-red-400">{formErrors.email}</div>
+                    <div className="text-xs text-red-400 font-medium">{formErrors.email}</div>
                   )}
                 </div>
                 
                 <div className="space-y-1">
-                  <Label htmlFor="name" className="cosmic-label text-white text-xs">
+                  <Label htmlFor="name" className="cosmic-label text-white text-xs font-semibold">
                     Name
                   </Label>
                   <Input
@@ -401,16 +430,16 @@ const Interest = () => {
                     name="name"
                     value={formData.name}
                     onChange={handleInputChange}
-                    className="cosmic-input h-8 text-sm"
+                    className="cosmic-input h-8 text-sm bg-black/50 border-white/30 focus:border-white/60 text-white"
                     placeholder="Your name"
                   />
                   {formErrors.name && (
-                    <div className="text-xs text-red-400">{formErrors.name}</div>
+                    <div className="text-xs text-red-400 font-medium">{formErrors.name}</div>
                   )}
                 </div>
                 
                 <div className="space-y-1">
-                  <Label htmlFor="musicService" className="cosmic-label text-white text-xs">
+                  <Label htmlFor="musicService" className="cosmic-label text-white text-xs font-semibold">
                     Music Service
                   </Label>
                   <select
@@ -418,58 +447,84 @@ const Interest = () => {
                     name="musicService"
                     value={formData.musicService}
                     onChange={handleInputChange}
-                    className="cosmic-input h-8 w-full text-sm"
+                    className="cosmic-input h-8 w-full text-sm bg-black/70 border-white/30 focus:border-white/60 text-white [&>option]:bg-slate-800 [&>option]:text-white"
                   >
-                    <option value="">Select service</option>
-                    <option value="spotify">Spotify</option>
-                    <option value="appleMusic">Apple Music</option>
-                    <option value="youtubeMusic">YouTube Music</option>
-                    <option value="amazonMusic">Amazon Music</option>
-                    <option value="tidalMusic">TIDAL</option>
-                    <option value="other">Other</option>
+                    <option value="" className="bg-slate-800 text-white">Select service</option>
+                    <option value="spotify" className="bg-slate-800 text-white">Spotify</option>
+                    <option value="appleMusic" className="bg-slate-800 text-white">Apple Music</option>
+                    <option value="youtubeMusic" className="bg-slate-800 text-white">YouTube Music</option>
+                    <option value="amazonMusic" className="bg-slate-800 text-white">Amazon Music</option>
+                    <option value="tidalMusic" className="bg-slate-800 text-white">TIDAL</option>
+                    <option value="other" className="bg-slate-800 text-white">Other</option>
                   </select>
                 </div>
               </div>
               
               <div className="space-y-2">
                 <div className="space-y-1">
-                  <Label className="cosmic-label text-white text-xs flex justify-between">
-                    <span>Interest in Music</span>
-                    <span className="text-xs text-gray-300">{formData.musicInterestLevel}%</span>
+                  <Label className="cosmic-label text-white text-xs font-semibold flex justify-between items-start">
+                    <span className="flex-1 pr-2">How interested are you to connect with people who love and listen to the same kind of music you love?</span>
+                    <span className="text-xs text-blue-300 whitespace-nowrap">{formData.musicInterestLevel}%</span>
                   </Label>
-                  <Slider
-                    name="musicInterestLevel"
-                    value={[formData.musicInterestLevel]}
-                    onValueChange={(values) => handleSliderChange('musicInterestLevel', values[0])}
-                    className="cosmic-slider"
-                    max={100}
-                    step={1}
+                  <input
+                    ref={musicSliderRef}
+                    type="range"
+                    min="0"
+                    max="100"
+                    step="1"
+                    value={formData.musicInterestLevel}
+                    onChange={(e) => handleSliderChange('musicInterestLevel', parseInt(e.target.value))}
+                    className="w-full h-2 bg-blue-900/50 rounded-lg appearance-none cursor-pointer accent-blue-500"
+                    style={{ 
+                      accentColor: 'rgb(59, 130, 246)',
+                      cursor: 'pointer'
+                    }}
                   />
                 </div>
                 
                 <div className="space-y-1">
-                  <Label className="cosmic-label text-white text-xs flex justify-between">
-                    <span>Interest in Astrology</span>
-                    <span className="text-xs text-gray-300">{formData.astrologyInterestLevel}%</span>
+                  <Label className="cosmic-label text-white text-xs font-semibold flex justify-between items-start">
+                    <span className="flex-1 pr-2">How interested are you to connect with people based on astrological compatibility?</span>
+                    <span className="text-xs text-purple-300 whitespace-nowrap">{formData.astrologyInterestLevel}%</span>
                   </Label>
-                  <Slider
-                    name="astrologyInterestLevel"
-                    value={[formData.astrologyInterestLevel]}
-                    onValueChange={(values) => handleSliderChange('astrologyInterestLevel', values[0])}
-                    className="cosmic-slider"
-                    max={100}
-                    step={1}
+                  <input
+                    ref={astrologySliderRef}
+                    type="range"
+                    min="0"
+                    max="100"
+                    step="1"
+                    value={formData.astrologyInterestLevel}
+                    onChange={(e) => handleSliderChange('astrologyInterestLevel', parseInt(e.target.value))}
+                    className="w-full h-2 bg-purple-900/50 rounded-lg appearance-none cursor-pointer accent-purple-500"
+                    style={{ 
+                      accentColor: 'rgb(168, 85, 247)',
+                      cursor: 'pointer'
+                    }}
                   />
                 </div>
                 
-                <div className="flex items-center space-x-2">
+                <div className="space-y-1">
+                  <Label htmlFor="expectations" className="cosmic-label text-white text-xs font-semibold">
+                    What features would you like to see? Any concerns?
+                  </Label>
+                  <textarea
+                    id="expectations"
+                    name="expectations"
+                    value={formData.expectations}
+                    onChange={handleInputChange}
+                    className="cosmic-input h-20 text-sm w-full resize-none p-2 bg-black/50 border-white/30 focus:border-white/60 text-white"
+                    placeholder="Share your expectations and concerns..."
+                  />
+                </div>
+                
+                <div className="flex items-center space-x-2 pt-1">
                   <Checkbox
                     id="newsletterSignup"
                     checked={formData.newsletterSignup}
                     onCheckedChange={(checked) => 
                       handleCheckboxChange('newsletterSignup', checked === true)
                     }
-                    className="cosmic-checkbox h-3 w-3"
+                    className="cosmic-checkbox h-3 w-3 border-white/40"
                   />
                   <Label
                     htmlFor="newsletterSignup"
@@ -478,31 +533,17 @@ const Interest = () => {
                     Sign up for LYRA newsletter
                   </Label>
                 </div>
-                
-                <div className="space-y-1">
-                  <Label htmlFor="expectations" className="cosmic-label text-white text-xs">
-                    What features would you like to see? Any concerns?
-                  </Label>
-                  <textarea
-                    id="expectations"
-                    name="expectations"
-                    value={formData.expectations}
-                    onChange={handleInputChange}
-                    className="cosmic-input h-20 text-sm w-full resize-none p-2"
-                    placeholder="Share your expectations and concerns..."
-                  />
-                </div>
               </div>
               
               {formErrors.general && (
-                <div className="text-xs text-red-400">{formErrors.general}</div>
+                <div className="text-xs text-red-400 font-medium">{formErrors.general}</div>
               )}
               
               <Button 
                 type="submit"
                 onClick={handleSubmit}
                 disabled={isSubmitting}
-                className="w-full flex items-center justify-center h-8 cosmic-button text-sm"
+                className="w-full flex items-center justify-center h-9 cosmic-button bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white font-medium shadow-lg"
               >
                 {isSubmitting ? (
                   <>

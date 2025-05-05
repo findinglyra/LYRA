@@ -252,17 +252,17 @@ const Index = () => {
       
       {/* Mission section */}
       <section id="mission" className="w-full py-12 sm:py-16 md:py-24 relative" style={{
-        backgroundImage: "url('/index2.jpg')",
+        backgroundImage: "url('/index11.jpeg')",
         backgroundSize: "cover",
         backgroundPosition: "center",
         boxShadow: "inset 0 0 150px rgba(0,0,0,0.5)"
       }}>
-        {/* Enhanced overlay without blur for clearer background */}
-        <div className="absolute inset-0 bg-gradient-to-b from-[rgba(5,10,30,0.5)] to-[rgba(10,15,40,0.6)] z-0"></div>
+        {/* Lighter overlay for better image clarity */}
+        <div className="absolute inset-0 bg-gradient-to-b from-[rgba(5,10,30,0.3)] to-[rgba(10,15,40,0.4)] z-0"></div>
         
         <div className="container mx-auto px-3 sm:px-4 relative z-10">
           <div className="max-w-3xl mx-auto text-center bg-black/15 p-8 rounded-xl border border-white/20">
-            <h2 className="text-xl xs:text-2xl md:text-3xl font-bold text-center mb-4 sm:mb-6 sleek-heading text-white text-shadow-lg">Our Mission</h2>
+            <h2 className="text-xl xs:text-2xl md:text-3xl font-bold text-center mb-4 sm:mb-8 sleek-heading text-white text-shadow-lg">Our Mission</h2>
             
             <p className="text-sm sm:text-base text-white mb-4 sm:mb-8 leading-relaxed text-shadow-sm">
               At Lyra, we believe the universe speaks to us through music. Our mission is to harness the cosmic 
