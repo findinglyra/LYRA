@@ -328,7 +328,7 @@ const Index = () => {
 
       {/* Countdown section with different background */}
       <section className="w-full py-12 sm:py-16 md:py-24 relative overflow-hidden" style={{
-        backgroundImage: "url('/index4.jpg')",
+        backgroundImage: "url('/index10.jpeg')",
         backgroundSize: "cover",
         backgroundPosition: "center",
         boxShadow: "inset 0 0 150px rgba(0,0,0,0.5)"
@@ -391,7 +391,7 @@ const Index = () => {
       
       {/* Safety section */}
       <section id="safety" className="w-full py-12 sm:py-16 md:py-24 relative overflow-hidden" style={{
-        backgroundImage: "url('/index4.jpg')",
+        backgroundImage: "url('/index9.jpeg')",
         backgroundSize: "cover",
         backgroundPosition: "center",
         backgroundAttachment: "fixed",
@@ -609,8 +609,8 @@ const Index = () => {
 };
 
 const CountdownTimer = () => {
-  // Set launch date to August 15, 2025 at 12:00 PM GMT+1 (London time)
-  const launchDate = new Date("2025-08-15T12:00:00+01:00");
+  // Set launch date to exactly one month from today (June 5, 2025)
+  const launchDate = new Date("2025-06-05T12:00:00+01:00");
   
   const [timeLeft, setTimeLeft] = useState({
     days: 0,
