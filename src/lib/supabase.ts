@@ -2,28 +2,70 @@
 import { createClient } from '@supabase/supabase-js';
 import type { Database } from '../types/supabase';
 
+// Get environment variables with fallbacks for development
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || '';
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
 
+// Log configuration status
 if (!supabaseUrl || !supabaseAnonKey) {
-  console.error('Missing Supabase credentials. Please check your environment variables.');
+  console.error('⚠️ Missing Supabase credentials. Please check your environment variables.');
+  console.error('Make sure you have VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY in your .env file');
+} else {
+  console.log(`✅ Supabase credentials found. URL prefix: ${supabaseUrl.substring(0, 15)}...`);
 }
 
-// Log Supabase connection attempt for debugging
-console.log(`Connecting to Supabase at: ${supabaseUrl.slice(0, 15)}...`);
+// Create the Supabase client with proper options
+export const supabase = createClient<Database>(
+  supabaseUrl, 
+  supabaseAnonKey,
+  {
+    auth: {
+      persistSession: true,
+      autoRefreshToken: true,
+    },
+    global: {
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    },
+    // Set longer timeouts to avoid issues
+    db: {
+      schema: 'public',
+    },
+  }
+);
 
-export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey);
-
-// Test the connection immediately to verify it's working
+// Test the connection immediately and log the outcome
 (async () => {
   try {
-    const { data, error } = await supabase.from('interest_registrations').select('count', { count: 'exact', head: true });
+    console.log('Testing Supabase connection to interest_registrations table...');
+    const { data, error } = await supabase
+      .from('interest_registrations')
+      .select('count', { count: 'exact', head: true });
+      
     if (error) {
-      console.error('Supabase connection test failed:', error);
+      console.error('❌ Supabase connection test failed:', error.message);
+      console.error('Error details:', error);
+      
+      // Additional debugging info
+      if (error.message.includes('auth/invalid_claims')) {
+        console.error('This appears to be an authentication error. Check your Supabase API keys.');
+      } else if (error.message.includes('relation') && error.message.includes('does not exist')) {
+        console.error('The table does not exist. Please verify table name in Supabase dashboard.');
+      } else if (error.message.includes('permission denied')) {
+        console.error('Permission denied error. Check Row Level Security (RLS) policies in Supabase.');
+      }
     } else {
-      console.log('Supabase connection successful!');
+      console.log('✅ Supabase connection successful! Table is accessible.');
     }
   } catch (err) {
-    console.error('Error testing Supabase connection:', err);
+    console.error('❌ Unexpected error testing Supabase connection:', err);
+    if (err instanceof Error) {
+      if (err.message.includes('fetch')) {
+        console.error('This appears to be a network error. Check your internet connection and Supabase URL.');
+      } else if (err.message.includes('timeout')) {
+        console.error('Request timed out. The Supabase server might be unresponsive.');
+      }
+    }
   }
 })();

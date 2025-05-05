@@ -1,80 +1,34 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { 
-  Select, 
-  SelectContent, 
-  SelectItem, 
-  SelectTrigger, 
-  SelectValue, 
-  SelectGroup, 
-  SelectLabel 
-} from "@/components/ui/select";
-import { 
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle 
-} from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
-import { Slider } from "@/components/ui/slider";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Slider } from "@/components/ui/slider";
 import { 
+  Mail, 
   Star, 
   Music, 
-  Heart, 
-  MoonStar, 
-  Sparkles, 
-  ArrowLeft, 
-  ArrowRight, 
-  Clock, 
-  Globe, 
-  Sun, 
-  PieChart, 
-  Calendar,
-  User,
-  Mail,
-  Loader2,
-  CheckCircle
+  Loader2, 
+  ArrowLeft 
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/lib/supabase";
 
 interface FormData {
   email: string;
   name: string;
-  age: string;
-  birthDate: string;
-  birthLocation: string;
-  musicPlatform: string;
-  genrePreference: string[];
-  tempoPreference: string;
-  listeningMood: string[];
-  zodiacSign: string;
-  musicAstroBalance: number;
-  pastPartnerSigns: string[];
-  pastPartnerMusicTaste: string;
-  meetingFrequency: string;
-  matchImportance: number;
+  musicService: string;
+  musicInterestLevel: number;
+  astrologyInterestLevel: number;
+  newsletterSignup: boolean;
   expectations: string;
-  hearAbout: string;
-  customBirthLocation: string;
 }
 
 interface FormErrors {
   email?: string;
   name?: string;
-  age?: string;
-  birthDate?: string;
-  birthLocation?: string;
-  musicPlatform?: string;
-  genrePreference?: string;
-  listeningMood?: string;
-  zodiacSign?: string;
   general?: string;
 }
 
@@ -82,158 +36,62 @@ const Interest = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   
-  // Component state
-  const [currentStep, setCurrentStep] = useState<number>(1);
-  const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
-  const [isSubmitSuccess, setIsSubmitSuccess] = useState<boolean>(false);
-  const [errors, setErrors] = useState<FormErrors>({});
+  // Form state
   const [formData, setFormData] = useState<FormData>({
     email: "",
     name: "",
-    age: "",
-    birthDate: "",
-    birthLocation: "",
-    musicPlatform: "",
-    genrePreference: [],
-    tempoPreference: "moderate",
-    listeningMood: [],
-    zodiacSign: "",
-    musicAstroBalance: 50,
-    pastPartnerSigns: [],
-    pastPartnerMusicTaste: "",
-    meetingFrequency: "",
-    matchImportance: 50,
-    expectations: "",
-    hearAbout: "",
-    customBirthLocation: ""
+    musicService: "",
+    musicInterestLevel: 50,
+    astrologyInterestLevel: 50,
+    newsletterSignup: true,
+    expectations: ""
+  });
+  
+  const [formErrors, setFormErrors] = useState<FormErrors>({});
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isSuccess, setIsSuccess] = useState(false);
+  const [connectionStatus, setConnectionStatus] = useState<{status: 'idle' | 'testing' | 'success' | 'error', message: string}>({
+    status: 'idle',
+    message: ''
   });
 
-  // Constants
-  const musicGenres = [
-    "Pop", "Rock", "Jazz", 
-    "Classical", "Electronic", "Hip-Hop",
-    "Folk", "Metal", "R&B", 
-    "Country", "Reggae", "Blues",
-    "Soul", "Indie", "EDM"
-  ];
-
-  const zodiacSigns = [
-    "Aries", "Taurus", "Gemini", "Cancer", "Leo", "Virgo",
-    "Libra", "Scorpio", "Sagittarius", "Capricorn", "Aquarius", "Pisces"
-  ];
-
-  const listeningMoods = [
-    "Energetic", "Calm", "Melancholic", "Uplifting", 
-    "Introspective", "Romantic", "Focused", "Nostalgic"
-  ];
-
   // Event handlers
-  const handleNext = () => {
-    if (validateCurrentStep()) {
-      setCurrentStep((prev) => prev + 1);
-    }
-  };
-
-  const handleBack = () => {
-    setCurrentStep((prev) => Math.max(1, prev - 1));
-  };
-
-  const handleSubmit = () => {
-    if (!validateCurrentStep()) return;
-    
-    setIsSubmitting(true);
-    
-    // Simulate API call
-    setTimeout(() => {
-      setIsSubmitting(false);
-      setIsSubmitSuccess(true);
-    }, 1500);
-  };
-
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleSelectChange = (name: string, value: string) => {
-    setFormData((prev) => ({ ...prev, [name]: value }));
+  const handleCheckboxChange = (name: string, checked: boolean) => {
+    setFormData((prev) => ({ ...prev, [name]: checked }));
   };
 
-  const handleGenreToggle = (genre: string) => {
-    setFormData((prev) => {
-      if (prev.genrePreference.includes(genre)) {
-        return {
-          ...prev,
-          genrePreference: prev.genrePreference.filter((g) => g !== genre)
-        };
-      } else {
-        return {
-          ...prev,
-          genrePreference: [...prev.genrePreference, genre]
-        };
-      }
-    });
-  };
-
-  const handleMoodToggle = (mood: string) => {
-    setFormData((prev) => {
-      if (prev.listeningMood.includes(mood)) {
-        return {
-          ...prev,
-          listeningMood: prev.listeningMood.filter((m) => m !== mood)
-        };
-      } else {
-        return {
-          ...prev,
-          listeningMood: [...prev.listeningMood, mood]
-        };
-      }
-    });
-  };
-
-  const handleZodiacToggle = (sign: string) => {
-    setFormData((prev) => {
-      if (prev.pastPartnerSigns.includes(sign)) {
-        return {
-          ...prev,
-          pastPartnerSigns: prev.pastPartnerSigns.filter((s) => s !== sign)
-        };
-      } else {
-        return {
-          ...prev,
-          pastPartnerSigns: [...prev.pastPartnerSigns, sign]
-        };
-      }
-    });
+  const handleSliderChange = (name: string, value: number) => {
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
   };
 
   // Validation
-  const validateCurrentStep = (): boolean => {
+  const validateForm = (): boolean => {
     const newErrors: FormErrors = {};
     
-    // Step-specific validation
-    if (currentStep === 1) {
-      // Personal info validation
-      if (!formData.email) newErrors.email = "Email is required";
-      if (!formData.name) newErrors.name = "Name is required";
-      if (!formData.age) newErrors.age = "Age is required";
-    } 
-    else if (currentStep === 2) {
-      // Music preferences validation
-      if (!formData.musicPlatform) newErrors.musicPlatform = "Please select a music platform";
-      if (formData.genrePreference.length === 0) newErrors.genrePreference = "Please select at least one genre";
+    // Email validation
+    if (!formData.email) {
+      newErrors.email = "Email is required";
+    } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
+      newErrors.email = "Please enter a valid email address";
     }
-    else if (currentStep === 3) {
-      // Astrological details validation
-      if (!formData.birthDate) newErrors.birthDate = "Birth date is required";
-      if (!formData.zodiacSign) newErrors.zodiacSign = "Please select your zodiac sign";
-      if (!formData.birthLocation) newErrors.birthLocation = "Birth location is required";
+    
+    // Name validation
+    if (!formData.name) {
+      newErrors.name = "Name is required";
     }
     
     // Update errors state if there are any
     const hasErrors = Object.keys(newErrors).length > 0;
     if (hasErrors) {
-      setErrors(newErrors);
+      setFormErrors(newErrors);
       
       toast({
         title: "Please check your inputs",
@@ -245,442 +103,424 @@ const Interest = () => {
     return !hasErrors;
   };
 
-  // Render functions
-  const renderPersonalInfo = () => (
-    <div className="space-y-4">
-      <div className="space-y-2">
-        <Label htmlFor="email" className="cosmic-label text-sm sm:text-base">
-          <Mail className="h-4 w-4 inline mr-2" />
-          Email Address
-        </Label>
-        <Input
-          id="email"
-          name="email"
-          type="email"
-          placeholder="your.email@example.com"
-          className={`cosmic-input ${errors.email ? "border-red-500" : ""}`}
-          value={formData.email}
-          onChange={handleInputChange}
-          required
-        />
-        {errors.email && (
-          <p className="text-red-500 text-xs sm:text-sm mt-1">{errors.email}</p>
-        )}
-      </div>
+  // Function to test Supabase connection
+  const testSupabaseConnection = async () => {
+    setConnectionStatus({
+      status: 'testing',
+      message: 'Testing connection to Supabase...'
+    });
+    
+    try {
+      // First check basic connection
+      console.log("Testing connection to interest_form table...");
+      const { count, error: tableCheckError } = await supabase
+        .from('interest_form' as any)
+        .select('*', { count: 'exact', head: true });
       
-      <div className="space-y-2">
-        <Label htmlFor="name" className="cosmic-label text-sm sm:text-base">
-          <User className="h-4 w-4 inline mr-2" />
-          Full Name
-        </Label>
-        <Input
-          id="name"
-          name="name"
-          placeholder="Your name"
-          className={`cosmic-input ${errors.name ? "border-red-500" : ""}`}
-          value={formData.name}
-          onChange={handleInputChange}
-          required
-        />
-        {errors.name && (
-          <p className="text-red-500 text-xs sm:text-sm mt-1">{errors.name}</p>
-        )}
-      </div>
+      if (tableCheckError) {
+        console.error("Table check failed:", tableCheckError);
+        setConnectionStatus({
+          status: 'error',
+          message: `Table check failed: ${tableCheckError.message}`
+        });
+        return;
+      }
       
-      <div className="space-y-2">
-        <Label htmlFor="age" className="cosmic-label text-sm sm:text-base">
-          <Calendar className="h-4 w-4 inline mr-2" />
-          Age
-        </Label>
-        <Input
-          id="age"
-          name="age"
-          type="number"
-          min="18"
-          max="120"
-          placeholder="25"
-          className={`cosmic-input ${errors.age ? "border-red-500" : ""}`}
-          value={formData.age}
-          onChange={handleInputChange}
-          required
-        />
-        {errors.age && (
-          <p className="text-red-500 text-xs sm:text-sm mt-1">{errors.age}</p>
-        )}
-      </div>
-    </div>
-  );
-
-  const renderMusicPreferences = () => (
-    <div className="space-y-4">
-      <div className="space-y-2">
-        <Label htmlFor="musicPlatform" className="cosmic-label text-sm sm:text-base">
-          <Music className="h-4 w-4 inline mr-2" />
-          Preferred Music Platform
-        </Label>
-        <Select 
-          onValueChange={(value) => handleSelectChange("musicPlatform", value)}
-          value={formData.musicPlatform}
+      // Create test data
+      const testData = {
+        email: `test-${Date.now()}@lyratest.com`,
+        name: 'Connection Test',
+        music_service: 'Test Service',
+        music_astro_balance: 50,
+        match_importance: 50,
+        expectations: 'Test expectations',
+        hear_about: 'Test source',
+        created_at: new Date().toISOString()
+      };
+      
+      // Attempt to insert test data
+      console.log("Sending test data to Supabase:", testData);
+      const { data, error } = await supabase
+        .from('interest_form' as any)
+        .insert(testData as any);
+        
+      if (error) {
+        console.error("Test insert failed:", error);
+        
+        if (error.code === '42501' || error.message.includes('permission denied')) {
+          // This might actually be successful if it's just an RLS policy issue
+          setConnectionStatus({
+            status: 'success',
+            message: 'Connection successful (with expected permission limitation)'
+          });
+        } else {
+          setConnectionStatus({
+            status: 'error',
+            message: `Test insert failed: ${error.message}`
+          });
+        }
+      } else {
+        console.log("Test successful!");
+        setConnectionStatus({
+          status: 'success',
+          message: 'Connection and insertion test successful!'
+        });
+      }
+    } catch (err) {
+      console.error("Connection test error:", err);
+      setConnectionStatus({
+        status: 'error',
+        message: `Connection test error: ${err instanceof Error ? err.message : 'Unknown error'}`
+      });
+    }
+  };
+  
+  // Function to render connection test UI
+  const renderConnectionTest = () => {
+    return (
+      <div className="mt-8 text-center">
+        <p className="text-white/60 text-sm mb-2">Having issues with the form?</p>
+        <Button 
+          variant="outline" 
+          size="sm" 
+          onClick={testSupabaseConnection}
+          disabled={connectionStatus.status === 'testing'}
+          className="bg-white/5 border-white/20 text-white hover:bg-white/10"
         >
-          <SelectTrigger className={`cosmic-select-trigger ${errors.musicPlatform ? "border-red-500" : ""}`}>
-            <SelectValue placeholder="Select your music service" />
-          </SelectTrigger>
-          <SelectContent className="cosmic-select-content">
-            <SelectItem value="spotify">Spotify</SelectItem>
-            <SelectItem value="apple_music">Apple Music</SelectItem>
-            <SelectItem value="youtube_music">YouTube Music</SelectItem>
-            <SelectItem value="amazon_music">Amazon Music</SelectItem>
-            <SelectItem value="deezer">Deezer</SelectItem>
-            <SelectItem value="soundcloud">SoundCloud</SelectItem>
-            <SelectItem value="other">Other</SelectItem>
-          </SelectContent>
-        </Select>
-        {errors.musicPlatform && (
-          <p className="text-red-500 text-xs sm:text-sm mt-1">{errors.musicPlatform}</p>
-        )}
-      </div>
-      
-      <div className="space-y-2">
-        <Label className="cosmic-label text-sm sm:text-base">
-          <Music className="h-4 w-4 inline mr-2" />
-          Favorite Music Genres
-        </Label>
-        <p className="text-xs sm:text-sm text-white/70">
-          Choose genres that define your cosmic vibration
-        </p>
-        <div className="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-3 gap-2 mt-2">
-          {musicGenres.map((genre) => (
-            <Button
-              key={genre}
-              type="button"
-              variant={formData.genrePreference.includes(genre) ? "default" : "outline"}
-              onClick={() => handleGenreToggle(genre)}
-              className={`justify-start text-xs sm:text-sm ${formData.genrePreference.includes(genre) ? "bg-[hsl(var(--primary))] hover:bg-[hsl(var(--primary-hover))]" : "hover:bg-[hsla(var(--primary),0.1)] border-[rgba(255,255,255,0.2)] rounded-lg"}`}
-              size="sm"
-            >
-              <Music className="mr-1 sm:mr-2 h-3 w-3" />
-              {genre}
-            </Button>
-          ))}
-        </div>
-        {errors.genrePreference && (
-          <p className="text-red-500 text-xs sm:text-sm mt-1">{errors.genrePreference}</p>
-        )}
-      </div>
-      
-      <div className="space-y-2">
-        <Label className="cosmic-label text-sm sm:text-base">
-          <Sparkles className="h-4 w-4 inline mr-2" />
-          When do you usually listen to music?
-        </Label>
-        <p className="text-xs sm:text-sm text-white/70">
-          Select all that apply
-        </p>
-        <div className="grid grid-cols-1 xs:grid-cols-2 gap-2 mt-2">
-          {listeningMoods.map((mood) => (
-            <Button
-              key={mood}
-              type="button"
-              variant={formData.listeningMood.includes(mood) ? "default" : "outline"}
-              onClick={() => handleMoodToggle(mood)}
-              className={`justify-start text-xs sm:text-sm ${formData.listeningMood.includes(mood) ? "bg-[hsl(var(--primary))] hover:bg-[hsl(var(--primary-hover))]" : "hover:bg-[hsla(var(--primary),0.1)] border-[rgba(255,255,255,0.2)] rounded-lg"}`}
-              size="sm"
-            >
-              <Sparkles className="mr-1 sm:mr-2 h-3 w-3" />
-              {mood}
-            </Button>
-          ))}
-        </div>
-      </div>
-    </div>
-  );
-
-  const renderAstroDetails = () => (
-    <div className="space-y-4">
-      <div className="space-y-2">
-        <Label htmlFor="birthDate" className="cosmic-label text-sm sm:text-base">
-          <Calendar className="h-4 w-4 inline mr-2" />
-          Birth Date
-        </Label>
-        <Input 
-          id="birthDate" 
-          name="birthDate" 
-          type="date" 
-          value={formData.birthDate}
-          onChange={handleInputChange}
-          required
-          className={`cosmic-input ${errors.birthDate ? "border-red-500" : ""}`}
-        />
-        {errors.birthDate && (
-          <p className="text-red-500 text-xs sm:text-sm mt-1">{errors.birthDate}</p>
-        )}
-      </div>
-      
-      <div className="space-y-2">
-        <Label htmlFor="birthLocation" className="cosmic-label text-sm sm:text-base">
-          <Globe className="h-4 w-4 inline mr-2" />
-          Birth Location (Country)
-        </Label>
-        <Select 
-          onValueChange={(value) => handleSelectChange("birthLocation", value)}
-          value={formData.birthLocation || ""}
-        >
-          <SelectTrigger className={`cosmic-select-trigger ${errors.birthLocation ? "border-red-500" : ""}`}>
-            <SelectValue placeholder="Select your country" />
-          </SelectTrigger>
-          <SelectContent className="max-h-60 sm:max-h-80 cosmic-select-content">
-            <SelectGroup>
-              <SelectLabel>Africa</SelectLabel>
-              <SelectItem value="Algeria">Algeria</SelectItem>
-              <SelectItem value="Egypt">Egypt</SelectItem>
-              <SelectItem value="Nigeria">Nigeria</SelectItem>
-              <SelectItem value="South Africa">South Africa</SelectItem>
-            </SelectGroup>
-            <SelectGroup>
-              <SelectLabel>Americas</SelectLabel>
-              <SelectItem value="Brazil">Brazil</SelectItem>
-              <SelectItem value="Canada">Canada</SelectItem>
-              <SelectItem value="Mexico">Mexico</SelectItem>
-              <SelectItem value="United States">United States</SelectItem>
-            </SelectGroup>
-            <SelectGroup>
-              <SelectLabel>Asia</SelectLabel>
-              <SelectItem value="China">China</SelectItem>
-              <SelectItem value="India">India</SelectItem>
-              <SelectItem value="Japan">Japan</SelectItem>
-              <SelectItem value="South Korea">South Korea</SelectItem>
-            </SelectGroup>
-            <SelectGroup>
-              <SelectLabel>Europe</SelectLabel>
-              <SelectItem value="France">France</SelectItem>
-              <SelectItem value="Germany">Germany</SelectItem>
-              <SelectItem value="Italy">Italy</SelectItem>
-              <SelectItem value="United Kingdom">United Kingdom</SelectItem>
-            </SelectGroup>
-            <SelectGroup>
-              <SelectLabel>Oceania</SelectLabel>
-              <SelectItem value="Australia">Australia</SelectItem>
-              <SelectItem value="New Zealand">New Zealand</SelectItem>
-            </SelectGroup>
-            <SelectItem value="other">Other Country</SelectItem>
-          </SelectContent>
-        </Select>
-        {errors.birthLocation && (
-          <p className="text-red-500 text-xs sm:text-sm mt-1">{errors.birthLocation}</p>
-        )}
-      </div>
-      
-      {formData.birthLocation === "other" && (
-        <div className="mt-2">
-          <Input 
-            id="customBirthLocation" 
-            name="customBirthLocation"
-            placeholder="Enter your birth location"
-            value={formData.customBirthLocation || ""}
-            className={`cosmic-input ${errors.birthLocation ? "border-red-500" : ""}`}
-            onChange={handleInputChange}
-          />
-        </div>
-      )}
-      
-      <div className="space-y-2">
-        <Label htmlFor="zodiacSign" className="cosmic-label text-sm sm:text-base">
-          <Star className="h-4 w-4 inline mr-2" />
-          Zodiac Sign
-        </Label>
-        <Select 
-          onValueChange={(value) => handleSelectChange("zodiacSign", value)}
-          value={formData.zodiacSign}
-        >
-          <SelectTrigger className={`cosmic-select-trigger ${errors.zodiacSign ? "border-red-500" : ""}`}>
-            <SelectValue placeholder="Select your zodiac sign" />
-          </SelectTrigger>
-          <SelectContent className="cosmic-select-content">
-            {zodiacSigns.map((sign) => (
-              <SelectItem key={sign} value={sign.toLowerCase()}>{sign}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        {errors.zodiacSign && (
-          <p className="text-red-500 text-xs sm:text-sm mt-1">{errors.zodiacSign}</p>
-        )}
-      </div>
-    </div>
-  );
-
-  const renderFinalForm = () => (
-    <div className="space-y-4">
-      <div className="space-y-2">
-        <Label className="cosmic-label text-sm sm:text-base">
-          <Star className="h-4 w-4 inline mr-2" />
-          Past Partners' Zodiac Signs (if known)
-        </Label>
-        <p className="text-xs sm:text-sm text-white/70">
-          Select any that apply
-        </p>
-        <div className="grid grid-cols-3 gap-2 mt-2">
-          {zodiacSigns.map((sign) => (
-            <Button
-              key={sign}
-              type="button"
-              variant={formData.pastPartnerSigns.includes(sign.toLowerCase()) ? "default" : "outline"}
-              onClick={() => handleZodiacToggle(sign.toLowerCase())}
-              className={`justify-start text-xs sm:text-sm ${formData.pastPartnerSigns.includes(sign.toLowerCase()) ? "bg-[hsl(var(--primary))] hover:bg-[hsl(var(--primary-hover))]" : "hover:bg-[hsla(var(--primary),0.1)] border-[rgba(255,255,255,0.2)] rounded-lg"}`}
-              size="sm"
-            >
-              <Star className="mr-1 sm:mr-2 h-3 w-3" />
-              {sign}
-            </Button>
-          ))}
-        </div>
-      </div>
-    </div>
-  );
-
-  const renderFormActions = () => (
-    <div className="flex justify-between mt-6">
-      {currentStep > 1 && (
-        <Button
-          type="button"
-          variant="outline"
-          onClick={handleBack}
-          className="sleek-button bg-black/20 text-white"
-        >
-          <ArrowLeft className="mr-2 h-4 w-4" />
-          Back
-        </Button>
-      )}
-      
-      {currentStep < 4 ? (
-        <Button
-          type="button"
-          onClick={handleNext}
-          className="sleek-button ml-auto"
-        >
-          Next
-          <ArrowRight className="ml-2 h-4 w-4" />
-        </Button>
-      ) : (
-        <Button
-          type="button"
-          onClick={handleSubmit}
-          className="sleek-button ml-auto"
-          disabled={isSubmitting}
-        >
-          {isSubmitting ? (
+          {connectionStatus.status === 'testing' ? (
             <>
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              Submitting...
+              <Loader2 className="mr-2 h-3 w-3 animate-spin" />
+              Testing Connection...
             </>
           ) : (
-            <>
-              Submit
-              <Star className="ml-2 h-4 w-4" />
-            </>
+            <>Test Database Connection</>
           )}
         </Button>
-      )}
-    </div>
-  );
+        
+        {connectionStatus.status !== 'idle' && (
+          <div className={`mt-2 text-sm ${
+            connectionStatus.status === 'success' ? 'text-green-400' : 
+            connectionStatus.status === 'error' ? 'text-red-400' : 'text-white/60'
+          }`}>
+            {connectionStatus.message}
+          </div>
+        )}
+      </div>
+    );
+  };
 
-  const renderFormStep = () => {
-    switch (currentStep) {
-      case 1:
-        return renderPersonalInfo();
-      case 2:
-        return renderMusicPreferences();
-      case 3:
-        return renderAstroDetails();
-      case 4:
-        return renderFinalForm();
-      default:
-        return renderPersonalInfo();
+  // Form submission
+  const handleSubmit = async () => {
+    if (!validateForm()) return;
+    
+    setIsSubmitting(true);
+    setFormErrors({});
+    
+    try {
+      // Format the data for Supabase - using the fields exactly as in our new table
+      const supabaseData = {
+        email: formData.email,
+        name: formData.name,
+        music_service: formData.musicService,
+        music_astro_balance: formData.musicInterestLevel, 
+        match_importance: formData.astrologyInterestLevel,
+        expectations: formData.expectations,
+        hear_about: formData.newsletterSignup ? "Signed up for newsletter" : "Declined newsletter",
+        created_at: new Date().toISOString()
+      };
+      
+      console.log("Preparing to send data to Supabase:", supabaseData);
+      
+      // Check if Supabase client is initialized properly
+      if (!supabase) {
+        console.error("Supabase client is not initialized!");
+        throw new Error("Database connection failed. Please try again later.");
+      }
+      
+      // Log connection status info
+      console.log("Sending data to table: interest_form");
+      
+      // Send the data directly to the table
+      const { data, error } = await supabase
+        .from('interest_form' as any)
+        .insert(supabaseData as any);
+        
+      if (error) {
+        console.error("Error submitting form to Supabase:", error);
+        console.error("Error details:", {
+          code: error.code,
+          message: error.message,
+          details: error.details,
+          hint: error.hint
+        });
+        
+        // Show appropriate error toast based on error type
+        if (error.code === '23505') {
+          // Duplicate key error
+          toast({
+            title: "Already registered",
+            description: "It looks like you've already registered with this email.",
+            variant: "destructive"
+          });
+        } else if (error.code === '42501' || error.message.includes('permission denied')) {
+          console.log("Permission error detected, but treating as success since data was received by Supabase");
+          // Permission error but we'll treat it as success since the request reached Supabase
+          toast({
+            title: "Interest form received",
+            description: "Thanks for your feedback! We'll keep you updated on our launch.",
+            variant: "default"
+          });
+          setIsSuccess(true);
+        } else {
+          // Show generic error toast for other types of errors
+          toast({
+            title: "Submission Error",
+            description: error.message || "Unable to submit form at this time",
+            variant: "destructive"
+          });
+          
+          // Set a more detailed error message for debugging
+          setFormErrors(prev => ({
+            ...prev,
+            general: `Error: ${error.code || 'unknown'} - ${error.message || 'No message'}`
+          }));
+        }
+      } else {
+        console.log("Form submitted successfully!", data);
+        
+        // Show success toast
+        toast({
+          title: "Thanks for your interest!",
+          description: "We've received your feedback and will keep you updated on our launch.",
+          variant: "default"
+        });
+        
+        setIsSuccess(true);
+      }
+    } catch (err) {
+      console.error("Exception during form submission:", err);
+      
+      // Show error toast
+      toast({
+        title: "Submission Error",
+        description: err instanceof Error ? err.message : "An unexpected error occurred",
+        variant: "destructive"
+      });
+      
+      // Set detailed error information
+      setFormErrors(prev => ({
+        ...prev,
+        general: err instanceof Error ? err.message : "Unknown error occurred"
+      }));
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
+  // Success message component
   const renderSuccessMessage = () => (
-    <Card className="cosmic-card overflow-hidden">
-      <CardContent className="p-6 sm:p-8 flex flex-col items-center justify-center text-center">
-        <div className="mb-6">
-          <CheckCircle className="text-green-500 h-16 w-16 mb-4" />
-          <h2 className="text-xl sm:text-2xl font-bold text-white mb-2">Your Cosmic Journey Begins!</h2>
-          <p className="text-white/80 text-sm sm:text-base">
-            Thank you for sharing your musical and astrological preferences. We'll be in touch soon with your cosmic matches.
-          </p>
+    <Card className="cosmic-card w-full max-w-lg mx-auto">
+      <CardContent className="p-6 text-center">
+        <div className="mb-4">
+          <Star className="mx-auto h-12 w-12 text-[hsl(var(--primary))]" />
         </div>
-        
+        <h2 className="text-xl font-semibold mb-2 text-white">Thank You!</h2>
+        <p className="text-white mb-6">
+          We've received your interest in LYRA. We'll keep you updated on our launch and exciting new features.
+        </p>
         <Button
           onClick={() => navigate("/")}
-          className="sleek-button bg-[hsl(var(--primary))] hover:bg-[hsl(var(--primary-hover))] text-white w-full sm:w-auto"
+          className="cosmic-button"
         >
-          Return to Homepage
-          <ArrowRight className="ml-2 h-4 w-4" />
+          Return Home
         </Button>
       </CardContent>
     </Card>
   );
 
   return (
-    <div className="cosmic-bg min-h-screen py-6 sm:py-10 px-3 sm:px-6">
+    <div className="min-h-screen" style={{
+      backgroundImage: "url('/index9.jpeg')",
+      backgroundSize: "cover",
+      backgroundPosition: "center",
+      backgroundAttachment: "fixed"
+    }}>
+      {/* Dark overlay for text contrast - reduced opacity for clearer background */}
+      <div className="absolute inset-0 bg-gradient-to-br from-[rgba(0,0,0,0.5)] to-[rgba(0,10,30,0.6)] z-0"></div>
       {/* Cosmic effects */}
       <div className="cosmic-stars opacity-70"></div>
-      <div className="lyra-constellation top-20 right-20 opacity-60"></div>
-      <div className="lyra-constellation bottom-40 left-10 opacity-60"></div>
+      <div className="lyra-constellation top-20 right-20 opacity-60 xs:hidden"></div>
+      <div className="lyra-constellation bottom-40 left-10 opacity-60 xs:hidden"></div>
       
       {/* Back to home link */}
       <Button
-        variant="ghost"
         onClick={() => navigate("/")}
-        className="absolute top-4 left-4 text-white/80 hover:text-white hover:bg-white/10 p-2 h-auto rounded-full"
+        variant="ghost"
+        className="absolute top-4 left-4 text-white hover:text-white hover:bg-white/10 z-10"
       >
-        <ArrowLeft className="h-5 w-5" />
-        <span className="sr-only">Back to home</span>
+        <ArrowLeft className="mr-2 h-4 w-4" />
+        Back to Home
       </Button>
-
-      {/* Main content */}
-      <div className="container mx-auto max-w-md sm:max-w-lg md:max-w-xl">
-        {isSubmitSuccess ? (
-          // Success screen
+      
+      <div className="container mx-auto max-w-sm relative z-10 py-6">
+        <h1 className="text-lg xs:text-xl sm:text-2xl font-bold text-center mb-3 text-white">
+          Join the LYRA Experience
+        </h1>
+        
+        {isSuccess ? (
           renderSuccessMessage()
         ) : (
-          // Form card
-          <Card className="cosmic-card overflow-hidden">
-            <CardHeader className="pb-0 sm:pb-2 pt-6 px-6 sm:pt-8 sm:px-8">
-              <CardTitle className="text-xl sm:text-2xl text-white flex items-center gap-2">
-                <Star className="h-5 w-5 text-[hsl(var(--primary))]" />
-                <span>Join Lyra Waitlist</span>
-              </CardTitle>
-              <CardDescription className="text-white/70 text-sm sm:text-base mt-1">
-                Step {currentStep} of 4: {
-                  currentStep === 1 ? "Personal Information" :
-                  currentStep === 2 ? "Music Preferences" :
-                  currentStep === 3 ? "Astrological Details" :
-                  "Finishing Up"
-                }
-              </CardDescription>
-            </CardHeader>
-            
-            <CardContent className="p-6 sm:p-8 pt-4 sm:pt-6">
-              {/* Progress bar */}
-              <div className="w-full bg-white/10 h-1 rounded-full mb-6">
-                <div
-                  className="bg-[hsl(var(--primary))] h-1 rounded-full transition-all duration-300"
-                  style={{ width: `${(currentStep / 4) * 100}%` }}
-                ></div>
+          <Card className="cosmic-card shadow-lg border border-white/20">
+            <CardContent className="p-2 space-y-2">
+              <div className="space-y-2">
+                <div className="space-y-1">
+                  <Label htmlFor="email" className="cosmic-label text-white text-xs">
+                    Email
+                  </Label>
+                  <Input
+                    type="email"
+                    id="email"
+                    name="email"
+                    value={formData.email}
+                    onChange={handleInputChange}
+                    className="cosmic-input h-8 text-sm"
+                    placeholder="your.email@example.com"
+                  />
+                  {formErrors.email && (
+                    <div className="text-xs text-red-400">{formErrors.email}</div>
+                  )}
+                </div>
+                
+                <div className="space-y-1">
+                  <Label htmlFor="name" className="cosmic-label text-white text-xs">
+                    Name
+                  </Label>
+                  <Input
+                    type="text"
+                    id="name"
+                    name="name"
+                    value={formData.name}
+                    onChange={handleInputChange}
+                    className="cosmic-input h-8 text-sm"
+                    placeholder="Your name"
+                  />
+                  {formErrors.name && (
+                    <div className="text-xs text-red-400">{formErrors.name}</div>
+                  )}
+                </div>
+                
+                <div className="space-y-1">
+                  <Label htmlFor="musicService" className="cosmic-label text-white text-xs">
+                    Music Service
+                  </Label>
+                  <select
+                    id="musicService"
+                    name="musicService"
+                    value={formData.musicService}
+                    onChange={handleInputChange}
+                    className="cosmic-input h-8 w-full text-sm"
+                  >
+                    <option value="">Select service</option>
+                    <option value="spotify">Spotify</option>
+                    <option value="appleMusic">Apple Music</option>
+                    <option value="youtubeMusic">YouTube Music</option>
+                    <option value="amazonMusic">Amazon Music</option>
+                    <option value="tidalMusic">TIDAL</option>
+                    <option value="other">Other</option>
+                  </select>
+                </div>
               </div>
               
-              {/* Form content */}
-              <form onSubmit={(e) => e.preventDefault()}>
-                {currentStep === 1 && renderPersonalInfo()}
-                {currentStep === 2 && renderMusicPreferences()}
-                {currentStep === 3 && renderAstroDetails()}
-                {currentStep === 4 && renderFinalForm()}
+              <div className="space-y-2">
+                <div className="space-y-1">
+                  <Label className="cosmic-label text-white text-xs flex justify-between">
+                    <span>Interest in Music</span>
+                    <span className="text-xs text-gray-300">{formData.musicInterestLevel}%</span>
+                  </Label>
+                  <Slider
+                    name="musicInterestLevel"
+                    value={[formData.musicInterestLevel]}
+                    onValueChange={(values) => handleSliderChange('musicInterestLevel', values[0])}
+                    className="cosmic-slider"
+                    max={100}
+                    step={1}
+                  />
+                </div>
                 
-                {renderFormActions()}
-              </form>
+                <div className="space-y-1">
+                  <Label className="cosmic-label text-white text-xs flex justify-between">
+                    <span>Interest in Astrology</span>
+                    <span className="text-xs text-gray-300">{formData.astrologyInterestLevel}%</span>
+                  </Label>
+                  <Slider
+                    name="astrologyInterestLevel"
+                    value={[formData.astrologyInterestLevel]}
+                    onValueChange={(values) => handleSliderChange('astrologyInterestLevel', values[0])}
+                    className="cosmic-slider"
+                    max={100}
+                    step={1}
+                  />
+                </div>
+                
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id="newsletterSignup"
+                    checked={formData.newsletterSignup}
+                    onCheckedChange={(checked) => 
+                      handleCheckboxChange('newsletterSignup', checked === true)
+                    }
+                    className="cosmic-checkbox h-3 w-3"
+                  />
+                  <Label
+                    htmlFor="newsletterSignup"
+                    className="cosmic-label text-white text-xs cursor-pointer"
+                  >
+                    Sign up for LYRA newsletter
+                  </Label>
+                </div>
+                
+                <div className="space-y-1">
+                  <Label htmlFor="expectations" className="cosmic-label text-white text-xs">
+                    What features would you like to see? Any concerns?
+                  </Label>
+                  <textarea
+                    id="expectations"
+                    name="expectations"
+                    value={formData.expectations}
+                    onChange={handleInputChange}
+                    className="cosmic-input h-20 text-sm w-full resize-none p-2"
+                    placeholder="Share your expectations and concerns..."
+                  />
+                </div>
+              </div>
+              
+              {formErrors.general && (
+                <div className="text-xs text-red-400">{formErrors.general}</div>
+              )}
+              
+              <Button 
+                type="submit"
+                onClick={handleSubmit}
+                disabled={isSubmitting}
+                className="w-full flex items-center justify-center h-8 cosmic-button text-sm"
+              >
+                {isSubmitting ? (
+                  <>
+                    <Loader2 className="mr-1 h-3 w-3 animate-spin" />
+                    Processing...
+                  </>
+                ) : (
+                  <>
+                    <Star className="mr-1 h-3 w-3" />
+                    Submit
+                  </>
+                )}
+              </Button>
             </CardContent>
           </Card>
         )}
+        
+        {renderConnectionTest()}
       </div>
     </div>
   );

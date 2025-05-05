@@ -148,6 +148,42 @@ export interface Database {
         }
         Relationships: []
       }
+      interest_form: {
+        Row: {
+          id: string
+          email: string
+          name: string
+          music_service: string | null
+          music_astro_balance: number | null
+          match_importance: number | null
+          expectations: string | null
+          hear_about: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          email: string
+          name: string
+          music_service?: string | null
+          music_astro_balance?: number | null
+          match_importance?: number | null
+          expectations?: string | null
+          hear_about?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          email?: string
+          name?: string
+          music_service?: string | null
+          music_astro_balance?: number | null
+          match_importance?: number | null
+          expectations?: string | null
+          hear_about?: string | null
+          created_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

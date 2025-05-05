@@ -134,18 +134,19 @@ const Auth = () => {
   };
 
   return (
-    <div className="cosmic-bg min-h-screen flex flex-col items-center justify-center p-4">
-      {/* Cosmic stars */}
-      <div className="cosmic-stars"></div>
+    <div className="min-h-screen flex flex-col items-center justify-center p-4 relative" style={{
+      backgroundImage: "url('/index3.jpg')",
+      backgroundSize: "cover",
+      backgroundPosition: "center",
+      boxShadow: "inset 0 0 150px rgba(0,0,0,0.5)"
+    }}>
+      {/* Dark overlay with adjusted opacity for better contrast - no blur */}
+      <div className="absolute inset-0 bg-gradient-to-b from-[rgba(10,20,40,0.5)] to-[rgba(5,15,35,0.6)] z-0"></div>
       
-      {/* Constellation effects */}
-      <div className="lyra-constellation top-20 right-20"></div>
-      <div className="lyra-constellation bottom-40 left-10"></div>
-      
-      <div className="w-full max-w-md space-y-8 solid-overlay-card p-8 relative z-10 rounded-2xl">
+      <div className="w-full max-w-md space-y-8 bg-black/20 p-8 relative z-10 rounded-2xl border border-white/20">
         <Button
           variant="ghost"
-          className="mb-4 hover:bg-[hsla(var(--pale-yellow),0.1)] text-white"
+          className="mb-4 hover:bg-white/10 text-white transition-colors"
           onClick={() => navigate("/")}
         >
           <ArrowLeft className="mr-2 h-4 w-4" />
@@ -153,21 +154,21 @@ const Auth = () => {
         </Button>
 
         <div className="flex justify-center mb-4">
-          <MoonStar className="h-8 w-8 text-[hsl(var(--pale-yellow))]" />
+          <MoonStar className="h-8 w-8 text-primary" />
         </div>
 
         <Tabs defaultValue={activeTab} value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid grid-cols-2 mb-6 bg-[rgba(5,10,30,0.4)]">
+          <TabsList className="grid grid-cols-2 mb-6 bg-black/30 border border-white/10">
             <TabsTrigger 
               value="signup" 
-              className="flex items-center gap-2 data-[state=active]:bg-[hsla(var(--primary),0.2)] data-[state=active]:text-white"
+              className="flex items-center gap-2 data-[state=active]:bg-gradient-to-r data-[state=active]:from-[hsl(var(--primary))] data-[state=active]:to-[hsl(var(--accent))] data-[state=active]:text-white text-white/80 hover:text-white hover:bg-white/10 transition-colors"
             >
               <UserPlus className="h-4 w-4" />
               Create Account
             </TabsTrigger>
             <TabsTrigger 
               value="login" 
-              className="flex items-center gap-2 data-[state=active]:bg-[hsla(var(--primary),0.2)] data-[state=active]:text-white"
+              className="flex items-center gap-2 data-[state=active]:bg-gradient-to-r data-[state=active]:from-[hsl(var(--primary))] data-[state=active]:to-[hsl(var(--accent))] data-[state=active]:text-white text-white/80 hover:text-white hover:bg-white/10 transition-colors"
             >
               <LogIn className="h-4 w-4" />
               Sign In
@@ -177,8 +178,8 @@ const Auth = () => {
           {/* Sign Up Form */}
           <TabsContent value="signup" className="space-y-4">
             <div className="text-center mb-6">
-              <h2 className="text-2xl font-bold text-white">Join the constellation</h2>
-              <p className="text-white/80">Begin your stellar journey with Lyra</p>
+              <h2 className="text-2xl font-bold text-white text-shadow-sm">Join the constellation</h2>
+              <p className="text-white/80 text-shadow-sm">Begin your stellar journey with Lyra</p>
             </div>
             
             <form onSubmit={handleSignUp} className="space-y-4">
@@ -190,7 +191,7 @@ const Auth = () => {
                     placeholder="Email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    className="cosmic-input h-12 pl-10"
+                    className="h-12 pl-10 bg-black/30 border-white/20 text-white placeholder:text-white/50 focus:border-white/40 focus:ring-0"
                     required
                   />
                 </div>
@@ -202,22 +203,20 @@ const Auth = () => {
                     placeholder="Password"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    className="cosmic-input h-12 pl-10 pr-10"
+                    className="h-12 pl-10 bg-black/30 border-white/20 text-white placeholder:text-white/50 focus:border-white/40 focus:ring-0"
                     required
                   />
-                  <Button
+                  <button
                     type="button"
-                    variant="ghost"
-                    size="sm"
-                    className="absolute right-1 top-1/2 -translate-y-1/2 h-8 w-8 p-0 text-white/70"
                     onClick={togglePasswordVisibility}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-white/70 hover:text-white"
                   >
                     {showPassword ? (
-                      <EyeOff className="h-4 w-4" />
+                      <EyeOff size={16} />
                     ) : (
-                      <Eye className="h-4 w-4" />
+                      <Eye size={16} />
                     )}
-                  </Button>
+                  </button>
                 </div>
                 
                 <div className="relative">
@@ -227,46 +226,32 @@ const Auth = () => {
                     placeholder="Confirm Password"
                     value={confirmPassword}
                     onChange={(e) => setConfirmPassword(e.target.value)}
-                    className="cosmic-input h-12 pl-10"
-                    required
+                    className="h-12 pl-10 bg-black/30 border-white/20 text-white placeholder:text-white/50 focus:border-white/40 focus:ring-0"
                   />
+                  {passwordError && <p className="text-red-400 text-sm mt-1">{passwordError}</p>}
                 </div>
-                
-                {passwordError && (
-                  <p className="text-sm text-red-400 mt-1">{passwordError}</p>
-                )}
               </div>
 
               <Button 
-                className="w-full h-12 sleek-button" 
-                size="lg" 
                 type="submit" 
+                className="w-full h-12 bg-gradient-to-r from-[hsl(var(--primary))] to-[hsl(var(--accent))] text-white font-medium hover:shadow-glow transition-all"
                 disabled={isLoading}
               >
-                {isLoading ? (
-                  <span className="flex items-center">
-                    <Star className="mr-2 h-4 w-4 animate-spin" />
-                    Creating Account...
-                  </span>
-                ) : (
-                  <span className="flex items-center">
-                    Begin Journey
-                    <Star className="ml-2 h-4 w-4" />
-                  </span>
-                )}
+                {isLoading ? "Creating Account..." : "Create Account"}
+                <UserPlus className="ml-2 h-4 w-4" />
               </Button>
               
               <div className="text-center text-sm">
-                <div className="text-white/80">
+                <p className="text-white/70">
                   Already have an account?{" "}
                   <button
-                    type="button" 
-                    className="text-[hsl(var(--primary))] hover:underline"
+                    type="button"
+                    className="text-primary hover:text-accent transition-colors font-medium"
                     onClick={() => setActiveTab("login")}
                   >
                     Sign in
                   </button>
-                </div>
+                </p>
               </div>
             </form>
             
@@ -300,8 +285,8 @@ const Auth = () => {
           {/* Login Form */}
           <TabsContent value="login" className="space-y-4">
             <div className="text-center mb-6">
-              <h2 className="text-2xl font-bold text-white">Welcome back, explorer</h2>
-              <p className="text-white/80">Continue your stellar adventure</p>
+              <h2 className="text-2xl font-bold text-white text-shadow-sm">Welcome Back</h2>
+              <p className="text-white/80 text-shadow-sm">Continue your cosmic journey</p>
             </div>
             
             {resetMode ? (
@@ -314,35 +299,28 @@ const Auth = () => {
                       placeholder="Email"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
-                      className="cosmic-input h-12 pl-10"
+                      className="h-12 pl-10 bg-black/30 border-white/20 text-white placeholder:text-white/50 focus:border-white/40 focus:ring-0"
                       required
                     />
                   </div>
                 </div>
 
                 <Button 
-                  className="w-full h-12 sleek-button" 
-                  size="lg" 
                   type="submit" 
+                  className="w-full h-12 bg-gradient-to-r from-[hsl(var(--primary))] to-[hsl(var(--accent))] text-white font-medium hover:shadow-glow transition-all"
                   disabled={isLoading}
                 >
-                  {isLoading ? (
-                    <span className="flex items-center">
-                      <Star className="mr-2 h-4 w-4 animate-spin" />
-                      Sending...
-                    </span>
-                  ) : (
-                    "Send Reset Link"
-                  )}
+                  {isLoading ? "Sending Reset Link..." : "Send Reset Link"}
+                  <Mail className="ml-2 h-4 w-4" />
                 </Button>
                 
                 <div className="text-center mt-4">
                   <button
                     type="button"
-                    className="text-[hsl(var(--primary))] hover:underline text-sm"
+                    className="text-primary hover:text-accent transition-colors font-medium"
                     onClick={() => setResetMode(false)}
                   >
-                    Back to sign in
+                    Back to Sign In
                   </button>
                 </div>
               </form>
@@ -356,7 +334,7 @@ const Auth = () => {
                       placeholder="Email"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
-                      className="cosmic-input h-12 pl-10"
+                      className="h-12 pl-10 bg-black/30 border-white/20 text-white placeholder:text-white/50 focus:border-white/40 focus:ring-0"
                       required
                     />
                   </div>
@@ -368,56 +346,43 @@ const Auth = () => {
                       placeholder="Password"
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
-                      className="cosmic-input h-12 pl-10 pr-10"
+                      className="h-12 pl-10 bg-black/30 border-white/20 text-white placeholder:text-white/50 focus:border-white/40 focus:ring-0"
                       required
                     />
-                    <Button
+                    <button
                       type="button"
-                      variant="ghost"
-                      size="sm"
-                      className="absolute right-1 top-1/2 -translate-y-1/2 h-8 w-8 p-0 text-white/70"
                       onClick={togglePasswordVisibility}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-white/70 hover:text-white"
                     >
                       {showPassword ? (
-                        <EyeOff className="h-4 w-4" />
+                        <EyeOff size={16} />
                       ) : (
-                        <Eye className="h-4 w-4" />
+                        <Eye size={16} />
                       )}
-                    </Button>
+                    </button>
                   </div>
                 </div>
 
                 <Button 
-                  className="w-full h-12 sleek-button" 
-                  size="lg" 
                   type="submit" 
+                  className="w-full h-12 bg-gradient-to-r from-[hsl(var(--primary))] to-[hsl(var(--accent))] text-white font-medium hover:shadow-glow transition-all"
                   disabled={isLoading}
                 >
-                  {isLoading ? (
-                    <span className="flex items-center">
-                      <Star className="mr-2 h-4 w-4 animate-spin" />
-                      Traveling...
-                    </span>
-                  ) : (
-                    <span className="flex items-center">
-                      Continue Journey
-                      <ArrowRight className="ml-2 h-4 w-4" />
-                    </span>
-                  )}
+                  {isLoading ? "Signing In..." : "Sign In"}
+                  <LogIn className="ml-2 h-4 w-4" />
                 </Button>
                 
                 <div className="flex justify-between text-sm">
                   <button
                     type="button"
-                    className="text-[hsl(var(--primary))] hover:underline"
+                    className="text-primary hover:text-accent transition-colors font-medium"
                     onClick={() => setResetMode(true)}
                   >
-                    Lost your starmap?
+                    Forgot password?
                   </button>
-                  
                   <button
                     type="button"
-                    className="text-[hsl(var(--primary))] hover:underline"
+                    className="text-primary hover:text-accent transition-colors font-medium"
                     onClick={() => setActiveTab("signup")}
                   >
                     Create account
