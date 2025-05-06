@@ -25,10 +25,13 @@ const Auth = () => {
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [resetMode, setResetMode] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [formLoading, setFormLoading] = useState(false); // Overall form loading state
   const [activeTab, setActiveTab] = useState("signup");
   const [passwordError, setPasswordError] = useState("");
+  const [emailError, setEmailError] = useState("");
   const navigate = useNavigate();
   const location = useLocation();
   const { signUp, signIn, resetPassword, user, checkAndRedirect } = useAuth();
@@ -56,15 +59,32 @@ const Auth = () => {
     }
   }, [location.pathname, location.search]);
 
+  // Email validation function
+  const validateEmail = (email: string): boolean => {
+    const regex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return regex.test(email);
+  };
+
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
+    setFormLoading(true);
     setPasswordError("");
+    setEmailError("");
+
+    // Validate email format
+    if (!validateEmail(email)) {
+      setEmailError("Please enter a valid email address");
+      setIsLoading(false);
+      setFormLoading(false);
+      return;
+    }
 
     // Validate passwords match
     if (password !== confirmPassword) {
       setPasswordError("Passwords don't match");
       setIsLoading(false);
+      setFormLoading(false);
       return;
     }
 
@@ -72,6 +92,7 @@ const Auth = () => {
     if (password.length < 8) {
       setPasswordError("Password must be at least 8 characters");
       setIsLoading(false);
+      setFormLoading(false);
       return;
     }
 
@@ -82,21 +103,33 @@ const Auth = () => {
         description: "Please check your email to verify your account."
       });
       setActiveTab("login");
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Authentication error:', error);
+      const errorMessage = error instanceof Error ? error.message : "An unexpected error occurred";
       toast({
         title: "Account creation failed",
-        description: error.message || "An unexpected error occurred",
+        description: errorMessage,
         variant: "destructive"
       });
     } finally {
       setIsLoading(false);
+      setFormLoading(false);
     }
   };
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
+    setFormLoading(true);
+    setEmailError("");
+
+    // Validate email format if not in reset mode
+    if (!resetMode && !validateEmail(email)) {
+      setEmailError("Please enter a valid email address");
+      setIsLoading(false);
+      setFormLoading(false);
+      return;
+    }
 
     try {
       if (resetMode) {
@@ -108,29 +141,48 @@ const Auth = () => {
         setResetMode(false);
       } else {
         await signIn(email, password);
-        // After sign-in, checkAndRedirect will handle directing the user
-        // to the create-profile page if they don't have a profile yet,
-        // or to the match page if they already have one
         toast({
           title: "Sign in successful",
           description: "Welcome back to Lyra!"
         });
-        await checkAndRedirect();
+        try {
+          await checkAndRedirect();
+        } catch (redirectError) {
+          // Fallback if redirect fails
+          console.error("Redirect failed:", redirectError);
+          navigate('/');
+        }
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Authentication error:', error);
+      const errorMessage = error instanceof Error ? error.message : "Invalid email or password";
       toast({
         title: "Authentication failed",
-        description: error.message || "Invalid email or password",
+        description: errorMessage,
         variant: "destructive"
       });
     } finally {
       setIsLoading(false);
+      setFormLoading(false);
     }
   };
 
   const togglePasswordVisibility = () => {
     setShowPassword(!showPassword);
+  };
+
+  const toggleConfirmPasswordVisibility = () => {
+    setShowConfirmPassword(!showConfirmPassword);
+  };
+
+  // Handle social authentication
+  const handleSocialAuth = (provider: string) => {
+    toast({
+      title: "Coming soon",
+      description: `${provider} authentication will be available soon!`,
+    });
+    // When ready to implement:
+    // supabase.auth.signInWithOAuth({ provider: provider.toLowerCase() });
   };
 
   return (
@@ -156,6 +208,15 @@ const Auth = () => {
         <div className="flex justify-center mb-4">
           <MoonStar className="h-8 w-8 text-primary" />
         </div>
+
+        {formLoading && (
+          <div className="absolute inset-0 flex items-center justify-center bg-black/30 backdrop-blur-sm rounded-2xl z-20">
+            <div className="text-center">
+              <div className="inline-block animate-spin rounded-full h-8 w-8 border-t-2 border-primary border-r-2 border-white/20 mb-2"></div>
+              <p className="text-white text-sm">Processing...</p>
+            </div>
+          </div>
+        )}
 
         <Tabs defaultValue={activeTab} value={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsList className="grid grid-cols-2 mb-6 bg-black/30 border border-white/10">
@@ -194,6 +255,7 @@ const Auth = () => {
                     className="h-12 pl-10 bg-black/30 border-white/20 text-white placeholder:text-white/50 focus:border-white/40 focus:ring-0"
                     required
                   />
+                  {emailError && <p className="text-red-400 text-sm mt-1">{emailError}</p>}
                 </div>
                 
                 <div className="relative">
@@ -222,12 +284,23 @@ const Auth = () => {
                 <div className="relative">
                   <Key className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-white/70" />
                   <Input
-                    type={showPassword ? "text" : "password"}
+                    type={showConfirmPassword ? "text" : "password"}
                     placeholder="Confirm Password"
                     value={confirmPassword}
                     onChange={(e) => setConfirmPassword(e.target.value)}
                     className="h-12 pl-10 bg-black/30 border-white/20 text-white placeholder:text-white/50 focus:border-white/40 focus:ring-0"
                   />
+                  <button
+                    type="button"
+                    onClick={toggleConfirmPasswordVisibility}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-white/70 hover:text-white"
+                  >
+                    {showConfirmPassword ? (
+                      <EyeOff size={16} />
+                    ) : (
+                      <Eye size={16} />
+                    )}
+                  </button>
                   {passwordError && <p className="text-red-400 text-sm mt-1">{passwordError}</p>}
                 </div>
               </div>
@@ -273,7 +346,7 @@ const Auth = () => {
                   variant="outline"
                   className="h-12 glass-card border-[hsla(var(--pale-yellow),0.2)] hover:border-[hsla(var(--pale-yellow),0.4)] text-white"
                   type="button"
-                  onClick={() => {/* Auth providers will be added here */}}
+                  onClick={() => handleSocialAuth(service.name)}
                 >
                   <service.icon className="mr-2 h-4 w-4" />
                   Continue with {service.name}
@@ -302,6 +375,7 @@ const Auth = () => {
                       className="h-12 pl-10 bg-black/30 border-white/20 text-white placeholder:text-white/50 focus:border-white/40 focus:ring-0"
                       required
                     />
+                    {emailError && <p className="text-red-400 text-sm mt-1">{emailError}</p>}
                   </div>
                 </div>
 
@@ -337,6 +411,7 @@ const Auth = () => {
                       className="h-12 pl-10 bg-black/30 border-white/20 text-white placeholder:text-white/50 focus:border-white/40 focus:ring-0"
                       required
                     />
+                    {emailError && <p className="text-red-400 text-sm mt-1">{emailError}</p>}
                   </div>
                   
                   <div className="relative">
@@ -411,7 +486,7 @@ const Auth = () => {
                       variant="outline"
                       className="h-12 glass-card border-[hsla(var(--pale-yellow),0.2)] hover:border-[hsla(var(--pale-yellow),0.4)] text-white"
                       type="button"
-                      onClick={() => {/* Auth providers will be added here */}}
+                      onClick={() => handleSocialAuth(service.name)}
                     >
                       <service.icon className="mr-2 h-4 w-4" />
                       Continue with {service.name}

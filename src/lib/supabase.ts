@@ -14,6 +14,25 @@ if (!supabaseUrl || !supabaseAnonKey) {
   console.log(`✅ Supabase credentials found. URL prefix: ${supabaseUrl.substring(0, 15)}...`);
 }
 
+// Create custom fetch with longer timeout
+const customFetch = (url: RequestInfo | URL, options: RequestInit = {}) => {
+  console.log(`🔄 Supabase request to: ${url.toString().substring(0, 50)}...`);
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 30000); // 30-second timeout
+  
+  return fetch(url, {
+    ...options,
+    signal: controller.signal,
+  }).then(response => {
+    clearTimeout(timeoutId);
+    return response;
+  }).catch(error => {
+    clearTimeout(timeoutId);
+    console.error(`❌ Supabase fetch error: ${error.message}`);
+    throw error;
+  });
+};
+
 // Create the Supabase client with proper options
 export const supabase = createClient<Database>(
   supabaseUrl, 
@@ -27,6 +46,7 @@ export const supabase = createClient<Database>(
       headers: {
         'Content-Type': 'application/json',
       },
+      fetch: customFetch,
     },
     // Set longer timeouts to avoid issues
     db: {
@@ -38,9 +58,9 @@ export const supabase = createClient<Database>(
 // Test the connection immediately and log the outcome
 (async () => {
   try {
-    console.log('Testing Supabase connection to interest_registrations table...');
+    console.log('Testing Supabase connection to interest_form table...');
     const { data, error } = await supabase
-      .from('interest_registrations')
+      .from('interest_form')
       .select('count', { count: 'exact', head: true });
       
     if (error) {
@@ -65,6 +85,8 @@ export const supabase = createClient<Database>(
         console.error('This appears to be a network error. Check your internet connection and Supabase URL.');
       } else if (err.message.includes('timeout')) {
         console.error('Request timed out. The Supabase server might be unresponsive.');
+      } else if (err.message.includes('abort')) {
+        console.error('Request was aborted. This could be due to a timeout or network issue.');
       }
     }
   }

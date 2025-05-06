@@ -60,7 +60,7 @@ const Interest = () => {
   const astrologySliderRef = useRef<HTMLInputElement>(null);
 
   // Event handlers
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
@@ -133,7 +133,6 @@ const Interest = () => {
   };
 
   // Function to test Supabase connection
-  /*
   const testSupabaseConnection = async () => {
     setConnectionStatus({
       status: 'testing',
@@ -141,73 +140,108 @@ const Interest = () => {
     });
     
     try {
-      // First check basic connection
-      console.log("Testing connection to interest_form table...");
-      const { count, error: tableCheckError } = await supabase
-        .from('interest_form' as any)
-        .select('*', { count: 'exact', head: true });
-      
-      if (tableCheckError) {
-        console.error("Table check failed:", tableCheckError);
-        setConnectionStatus({
-          status: 'error',
-          message: `Table check failed: ${tableCheckError.message}`
-        });
-        return;
-      }
-      
-      // Create test data
-      const testData = {
-        email: `test-${Date.now()}@lyratest.com`,
-        name: 'Connection Test',
-        music_service: 'Test Service',
-        music_astro_balance: 50,
-        match_importance: 50,
-        expectations: 'Test expectations',
-        hear_about: 'Test source',
-        created_at: new Date().toISOString()
+      // Log Supabase connection details
+      const connectionDetails = {
+        url: 'Supabase URL configured',
+        anon_key: 'Supabase key configured'
       };
+      console.log('Supabase connection details:', connectionDetails);
       
-      // Attempt to insert test data
-      console.log("Sending test data to Supabase:", testData);
-      const { data, error } = await supabase
-        .from('interest_form' as any)
-        .insert(testData as any);
-        
+      // Try a basic validation request with a 20 second timeout
+      console.log('Starting basic connection test with 20s timeout...');
+      
+      // Create a promise that rejects after timeout
+      const timeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => {
+          reject(new Error('Connection test timed out after 20 seconds'));
+        }, 20000);
+      });
+      
+      // Create the actual query promise
+      const queryPromise = (async () => {
+        const response = await supabase
+          .from('interest_form')
+          .select('id', { count: 'exact', head: true });
+        return response;
+      })();
+      
+      // Race between timeout and query
+      const result = await Promise.race([
+        queryPromise,
+        timeoutPromise
+      ]) as any;
+      
+      // If we get here, the query completed before timeout
+      const { data, error } = result;
+      
       if (error) {
-        console.error("Test insert failed:", error);
+        console.error('Connection test error:', error);
         
-        if (error.code === '42501' || error.message.includes('permission denied')) {
-          // This might actually be successful if it's just an RLS policy issue
+        // Provide specific feedback based on error type
+        if (error.code === '42P01') {
           setConnectionStatus({
-            status: 'success',
-            message: 'Connection successful (with expected permission limitation)'
+            status: 'error',
+            message: 'Table not found. Please confirm "interest_form" table exists in your Supabase project.'
+          });
+        } else if (error.code === '42501' || error.message.includes('permission denied')) {
+          setConnectionStatus({
+            status: 'error',
+            message: 'Permission error. Please check Row Level Security (RLS) policies for the table.'
+          });
+        } else if (error.message.includes('JWT')) {
+          setConnectionStatus({
+            status: 'error',
+            message: 'Authentication error. Please check your Supabase API key.'
           });
         } else {
           setConnectionStatus({
             status: 'error',
-            message: `Test insert failed: ${error.message}`
+            message: `Connection failed: ${error.message}`
           });
         }
       } else {
-        console.log("Test successful!");
+        console.log('Connection successful!', data);
         setConnectionStatus({
           status: 'success',
-          message: 'Connection and insertion test successful!'
+          message: 'Successfully connected to Supabase!'
         });
       }
     } catch (err) {
-      console.error("Connection test error:", err);
-      setConnectionStatus({
-        status: 'error',
-        message: `Connection test error: ${err instanceof Error ? err.message : 'Unknown error'}`
-      });
+      console.error('Connection test exception:', err);
+      
+      // Handle specific error types
+      if (err instanceof Error) {
+        if (err.message.includes('timed out')) {
+          setConnectionStatus({
+            status: 'error',
+            message: 'Connection timed out. Check your network, VPN, or firewall settings.'
+          });
+        } else if (err.message.includes('fetch') || err.message.includes('network')) {
+          setConnectionStatus({
+            status: 'error',
+            message: 'Network error. Check your internet connection and Supabase URL.'
+          });
+        } else if (err.message.includes('abort')) {
+          setConnectionStatus({
+            status: 'error',
+            message: 'Request was aborted. This could be due to network issues.'
+          });
+        } else {
+          setConnectionStatus({
+            status: 'error',
+            message: `Connection error: ${err.message}`
+          });
+        }
+      } else {
+        setConnectionStatus({
+          status: 'error',
+          message: 'Unknown connection error'
+        });
+      }
     }
   };
-  */
-  
+
   // Function to render connection test UI
-  /*
   const renderConnectionTest = () => {
     return (
       <div className="mt-8 text-center">
@@ -217,7 +251,7 @@ const Interest = () => {
           size="sm" 
           onClick={testSupabaseConnection}
           disabled={connectionStatus.status === 'testing'}
-          className="bg-white/5 border-white/20 text-white hover:bg-white/10"
+          className="bg-white/5 border-white/20 text-white hover:bg-white/10 hover:border-white hover:text-white transition-all"
         >
           {connectionStatus.status === 'testing' ? (
             <>
@@ -240,7 +274,32 @@ const Interest = () => {
       </div>
     );
   };
-  */
+
+  // Function to add network retry logic for Supabase operations
+  const withRetry = async (operation: () => Promise<any>, maxRetries = 2, delay = 2000) => {
+    let lastError;
+    
+    for (let attempt = 0; attempt <= maxRetries; attempt++) {
+      try {
+        if (attempt > 0) {
+          console.log(`Retry attempt ${attempt}/${maxRetries}...`);
+        }
+        return await operation();
+      } catch (err) {
+        console.error(`Attempt ${attempt + 1} failed:`, err);
+        lastError = err;
+        
+        if (attempt < maxRetries) {
+          console.log(`Waiting ${delay}ms before retry...`);
+          await new Promise(resolve => setTimeout(resolve, delay));
+          // Increase delay for next retry (exponential backoff)
+          delay = Math.min(delay * 1.5, 10000);
+        }
+      }
+    }
+    
+    throw lastError;
+  };
 
   // Form submission
   const handleSubmit = async () => {
@@ -273,10 +332,35 @@ const Interest = () => {
       // Log connection status info
       console.log("Sending data to table: interest_form");
       
-      // Send the data directly to the table
-      const { data, error } = await supabase
-        .from('interest_form' as any)
-        .insert(supabaseData as any);
+      // Set up a timeout to detect stuck requests
+      let requestCompleted = false;
+      const requestTimeout = setTimeout(() => {
+        if (!requestCompleted) {
+          console.error("Supabase request timed out after 20 seconds!");
+          toast({
+            title: "Connection Timeout",
+            description: "Request is taking too long. Please check your internet connection and try again.",
+            variant: "destructive"
+          });
+          setFormErrors(prev => ({
+            ...prev,
+            general: "Connection timeout. The request took too long to complete."
+          }));
+          setIsSubmitting(false);
+        }
+      }, 20000);
+      
+      // Send the data directly to the table with retry logic
+      const { data, error } = await withRetry(async () => {
+        const response = await supabase
+          .from('interest_form')
+          .insert(supabaseData);
+        return response;
+      });
+      
+      // Mark request as completed to prevent timeout message
+      requestCompleted = true;
+      clearTimeout(requestTimeout);
         
       if (error) {
         console.error("Error submitting form to Supabase:", error);
@@ -564,6 +648,8 @@ const Interest = () => {
             </CardContent>
           </Card>
         )}
+        
+        {renderConnectionTest()}
         
       </div>
     </div>

@@ -7,7 +7,7 @@ async function testSupabaseConnection() {
   try {
     // Test 1: Basic connection
     console.log('Test 1: Basic connection test');
-    const { data: connectionData, error: connectionError } = await supabase.from('interest_registrations').select('count', { count: 'exact', head: true });
+    const { data: connectionData, error: connectionError } = await supabase.from('interest_form').select('count', { count: 'exact', head: true });
     
     if (connectionError) {
       console.error('Connection test failed:', connectionError);
@@ -16,10 +16,10 @@ async function testSupabaseConnection() {
     }
     
     // Test 2: Table structure validation
-    console.log('\nTest 2: Checking interest_registrations table structure');
+    console.log('\nTest 2: Checking interest_form table structure');
     const { data: tableData, error: tableError } = await supabase
-      .from('interest_registrations')
-      .select('id, email, name, age, created_at')
+      .from('interest_form')
+      .select('id, email, name, music_service, created_at')
       .limit(1);
       
     if (tableError) {
@@ -34,17 +34,13 @@ async function testSupabaseConnection() {
     const testData = {
       email: `test-${Date.now()}@example.com`,
       name: 'Test User',
-      age: 25,
-      music_astro_balance: 50,
-      expectations: 'Testing data insertion',
-      match_importance: 50,
-      hear_about: 'Test',
+      music_service: 'Test',
       created_at: new Date().toISOString()
     };
     
     // Begin transaction
     const { data: insertData, error: insertError } = await supabase
-      .from('interest_registrations')
+      .from('interest_form')
       .insert(testData);
       
     if (insertError) {
@@ -61,7 +57,7 @@ async function testSupabaseConnection() {
       // Since this is just a test, try to remove the test data
       try {
         await supabase
-          .from('interest_registrations')
+          .from('interest_form')
           .delete()
           .eq('email', testData.email);
         console.log('(Test data cleaned up)');
