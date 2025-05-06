@@ -358,7 +358,7 @@ const Index = () => {
 
       {/* Support section */}
       <section id="support" className="w-full py-12 sm:py-16 md:py-24 relative overflow-hidden" style={{
-        backgroundImage: "url('/index1.jpg')",
+        backgroundImage: "url('/index13.jpeg')",
         backgroundSize: "cover",
         backgroundPosition: "center bottom",
         backgroundAttachment: "fixed",
@@ -432,11 +432,11 @@ const Index = () => {
 
       {/* Footer - Enhanced with multiple sections, links, and app store downloads */}
       <footer className="w-full text-white pt-6 pb-0 safe-area-padding border-t border-white/10 mb-0" style={{
-        backgroundImage: "linear-gradient(to bottom, rgba(5, 14, 29, 0.7), rgba(10, 20, 38, 0.8)), url('/index3.jpg')",
+        backgroundImage: "linear-gradient(to bottom, rgba(5, 14, 29, 0.4), rgba(10, 20, 38, 0.5)), url('/index3.jpg')",
         backgroundSize: "cover",
         backgroundPosition: "center bottom",
-        backgroundBlendMode: "overlay",
-        boxShadow: "inset 0 0 150px rgba(0,0,0,0.7)",
+        backgroundBlendMode: "normal",
+        boxShadow: "inset 0 0 150px rgba(0,0,0,0.3)",
         marginBottom: 0
       }}>
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
@@ -453,7 +453,12 @@ const Index = () => {
               
               {/* Social media links */}
               <div className="flex space-x-4 pt-2">
-                <a href="https://instagram.com" className="text-white/70 hover:text-white transition-colors" aria-label="Instagram">
+                <a href="https://www.tiktok.com/@findinglyra" className="text-white/70 hover:text-white transition-colors" aria-label="TikTok">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M19.321 5.562C17.9222 4.0454 17.125 2.05361 17.098 0H12.996V16.371C12.9681 17.0361 12.7204 17.6747 12.2939 18.1895C11.8674 18.7043 11.2859 19.0673 10.633 19.2223C9.9802 19.3772 9.29569 19.3157 8.68036 19.0471C8.06502 18.7785 7.55632 18.3179 7.23939 17.7398C6.92245 17.1617 6.81722 16.5002 6.9404 15.8616C7.06358 15.223 7.40723 14.6418 7.91723 14.2031C8.42722 13.7644 9.0764 13.493 9.75695 13.4307C10.4375 13.3683 11.1196 13.5184 11.702 13.858V9.644C10.6522 9.51311 9.59014 9.62238 8.59576 9.96271C7.60138 10.303 6.70611 10.866 5.9801 11.6059C5.25409 12.3459 4.72235 13.2444 4.42171 14.2291C4.12108 15.2137 4.06017 16.2567 4.24349 17.2704C4.4268 18.2841 4.84845 19.2374 5.47242 20.053C6.09639 20.8685 6.90195 21.5227 7.82276 21.9616C8.74358 22.4005 9.75467 22.6111 10.7751 22.5771C11.7954 22.5432 12.7901 22.2654 13.681 21.7637C14.5719 21.262 15.3317 20.5495 15.8969 19.6855C16.4621 18.8216 16.818 17.8309 16.934 16.8041C17.05 15.7772 16.9229 14.7361 16.562 13.763V7.216C18.0324 8.2306 19.7104 8.90033 21.47 9.17V5.173C20.8093 5.16943 20.1551 5.05856 19.534 4.8452C18.9129 4.63183 18.3336 4.31906 17.823 3.921L19.321 5.562Z" fill="currentColor"/>
+                  </svg>
+                </a>
+                <a href="https://www.instagram.com/findlyra/" className="text-white/70 hover:text-white transition-colors" aria-label="Instagram">
                   <Instagram size={20} />
                 </a>
                 <a href="https://twitter.com" className="text-white/70 hover:text-white transition-colors" aria-label="Twitter">

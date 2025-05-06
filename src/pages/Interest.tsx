@@ -133,6 +133,7 @@ const Interest = () => {
   };
 
   // Function to test Supabase connection
+  /*
   const testSupabaseConnection = async () => {
     setConnectionStatus({
       status: 'testing',
@@ -203,8 +204,10 @@ const Interest = () => {
       });
     }
   };
+  */
   
   // Function to render connection test UI
+  /*
   const renderConnectionTest = () => {
     return (
       <div className="mt-8 text-center">
@@ -237,6 +240,7 @@ const Interest = () => {
       </div>
     );
   };
+  */
 
   // Form submission
   const handleSubmit = async () => {
@@ -561,7 +565,6 @@ const Interest = () => {
           </Card>
         )}
         
-        {renderConnectionTest()}
       </div>
     </div>
   );
