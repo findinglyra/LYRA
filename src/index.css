@@ -5,30 +5,38 @@
 
 /* Root variables for colors and theming */
 :root {
+  /* LYRA Blue Palette */
+  --baby-blue: 201 70% 65%;     /* #68bbe3 - Baby Blue */
+  --blue-grotto: 204 87% 44%;   /* #0e86d4 - Blue Grotto */
+  --medium-blue: 207 94% 32%;   /* #055c9d - Blue */
+  --navy-blue: 209 100% 19%;    /* #003060 - Navy Blue */
+  
+  /* Base theming */
   --background: 206 100% 98%;
-  --foreground: 210 40% 18%;
+  --foreground: 209 100% 19%;   /* Using Navy Blue for text */
 
-  --primary: 175 80% 45%;  /* Turquoise */
-  --primary-muted: 175 70% 90%;
+  --primary: 204 87% 44%;       /* Blue Grotto as primary */
+  --primary-muted: 201 70% 90%; /* Lighter version of Baby Blue */
   --primary-foreground: 0 0% 100%;
 
-  --accent: 200 70% 60%;   /* Powder Blue */
-  --accent-foreground: 210 40% 18%;
+  --accent: 201 70% 65%;        /* Baby Blue as accent */
+  --accent-foreground: 209 100% 19%;
 
-  --duck-egg: 180 56% 92%; /* Duck Egg */
-  --deep-blue: 210 80% 20%; /* Deep blue for text on white */
+  /* Keep existing colors */
+  --duck-egg: 180 56% 92%;      /* Duck Egg */
+  --deep-blue: 209 100% 19%;    /* Changed to Navy Blue */
   
-  /* Cosmic theme colors */
-  --dark-blue: 220 70% 5%;
-  --pale-yellow: 45 100% 80%;
-  --vibrant-yellow: 45 100% 50%;
-  --cosmic-purple: 280 70% 50%;
-  --stellar-blue: 220 80% 60%;
-  --nebula-pink: 330 80% 60%;
+  /* Cosmic theme colors - remap to blue palette */
+  --dark-blue: 209 100% 15%;    /* Darker Navy Blue */
+  --pale-yellow: 201 40% 90%;   /* Very light Baby Blue instead of yellow */
+  --vibrant-yellow: 204 87% 44%; /* Blue Grotto instead of yellow */
+  --cosmic-purple: 207 94% 32%; /* Medium Blue instead of purple */
+  --stellar-blue: 201 70% 65%;  /* Baby Blue */
+  --nebula-pink: 204 87% 60%;   /* Lighter Blue Grotto instead of pink */
 
-  --border: 220 13% 91%;
-  --input: 220 13% 91%;
-  --ring: 224 71.4% 4.1%;
+  --border: 201 30% 85%;
+  --input: 201 30% 91%;
+  --ring: 207 94% 32%;          /* Medium Blue */
   --radius: 0.75rem;
 }
 

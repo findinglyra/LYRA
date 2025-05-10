@@ -6,6 +6,7 @@ import { Mail, Key, Eye, EyeOff, Music, Star, MoonStar } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/lib/supabase";
+import { forceSignIn, fixAuthState } from "@/utils/authUtils";
 
 const Login = () => {
   const [email, setEmail] = useState("");
@@ -19,34 +20,177 @@ const Login = () => {
 
   const handleEmailLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsLoading(true);
-
-    try {
-      if (resetMode) {
+    console.log('Starting sign-in with email:', email);
+    
+    if (!email || !password) {
+      toast({
+        title: "Error",
+        description: "Please enter both email and password",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    if (resetMode) {
+      setIsLoading(true);
+      try {
         await resetPassword(email);
         toast({
           title: "Password reset email sent",
           description: "Please check your email to reset your password",
         });
         setResetMode(false);
-      } else {
-        await signIn(email, password);
-        navigate("/match");
+      } catch (error: any) {
+        toast({
+          title: "Password reset failed",
+          description: error.message || "An unexpected error occurred",
+          variant: "destructive"
+        });
+      } finally {
+        setIsLoading(false);
       }
-    } catch (error: any) {
-      console.error('Login error:', error);
+      return;
+    }
+    
+    setIsLoading(true);
+    console.time('LoginProcess');
+    
+    // Global timeout to prevent infinite loading
+    const loginTimeout = setTimeout(() => {
+      console.error('Login: Sign-in timed out after 15 seconds');
+      setIsLoading(false);
       toast({
-        title: resetMode ? "Password reset failed" : "Login failed",
+        title: "Sign-in timed out",
+        description: "Please try again. If this persists, clear your browser data.",
+        variant: "destructive"
+      });
+    }, 15000);
+    
+    try {
+      // Step 1: Clear any existing auth state
+      console.log('Login: Clearing existing auth state');
+      await supabase.auth.signOut();
+      
+      // Clear cookies that might interfere with auth
+      document.cookie.split(';').forEach(cookie => {
+        const [name] = cookie.trim().split('=');
+        if (name.includes('sb-') || name.includes('supabase') || name.includes('auth')) {
+          document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;`;
+        }
+      });
+      
+      // Brief delay to ensure session clearing takes effect
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      // Step 2: Authenticate directly against auth.users table
+      console.log('Login: Authenticating with auth.users table');
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password
+      });
+      
+      if (error) {
+        console.error('Login: Authentication error:', error);
+        throw error;
+      }
+      
+      if (!data.user || !data.session) {
+        console.error('Login: Missing user or session data');
+        throw new Error('Authentication successful but user data is missing');
+      }
+      
+      console.log('Login: Successfully authenticated user ID:', data.user.id);
+      
+      // Step 3: Verify the auth user record explicitly
+      const { data: userData, error: userError } = await supabase.auth.getUser();
+      
+      if (userError || !userData.user) {
+        console.error('Login: Failed to verify user record:', userError);
+        throw new Error('Failed to verify user in auth.users table');
+      }
+      
+      // Step 4: Check if user has a profile with timeout protection
+      console.log('Login: Checking if user has a profile');
+      let hasProfile = false;
+      
+      try {
+        const profileCheckPromise = (async () => {
+          try {
+            // Dynamic imports to reduce initial load time
+            const { getProfile } = await import('@/services/profile');
+            const { getUserProfile } = await import('@/services/user-profile');
+            
+            // Check both profile tables in parallel
+            const musicProfilePromise = getProfile(data.user.id).catch(() => null);
+            const userProfilePromise = getUserProfile(data.user.id).catch(() => null);
+            const [musicProfile, userProfile] = await Promise.all([musicProfilePromise, userProfilePromise]);
+            
+            // User must have both profile types and essential fields
+            const hasComplete = Boolean(musicProfile) && 
+              Boolean(userProfile?.full_name) && 
+              Boolean(userProfile?.birth_date);
+            
+            console.log('Login: Profile check complete - musicProfile:', !!musicProfile, 
+                       'userProfile:', !!userProfile, 'hasComplete:', hasComplete);
+            return hasComplete;
+          } catch (error) {
+            console.error('Login: Error checking profile:', error);
+            return false;
+          }
+        })();
+        
+        // Set a timeout to prevent hanging
+        const timeoutPromise = new Promise<boolean>((_, reject) => {
+          setTimeout(() => reject(new Error('Profile check timed out')), 5000);
+        });
+        
+        // Race the profile check against the timeout
+        hasProfile = await Promise.race([profileCheckPromise, timeoutPromise]);
+      } catch (profileError) {
+        console.warn('Login: Profile check timed out or failed:', profileError);
+        // Continue with login but default to create-profile path
+        hasProfile = false;
+      }
+      
+      // Success! Clear timeout and show success message
+      clearTimeout(loginTimeout);
+      toast({
+        title: "Sign in successful",
+        description: "Welcome back to Lyra!",
+      });
+      
+      // Navigate based on profile status
+      console.log('Login: Redirecting based on profile status:', hasProfile ? '/match' : '/create-profile');
+      navigate(hasProfile ? '/match' : '/create-profile');
+      
+    } catch (error: any) {
+      clearTimeout(loginTimeout);
+      console.error('Login: Error during sign-in:', error);
+      
+      toast({
+        title: "Login failed",
         description: error.message || "An unexpected error occurred",
         variant: "destructive"
       });
+      
+      // Try to fix auth state after error
+      await fixAuthState().catch(e => 
+        console.error('Login: Error fixing auth state:', e)
+      );
     } finally {
+      clearTimeout(loginTimeout);
+      console.timeEnd('LoginProcess');
       setIsLoading(false);
     }
   };
 
   const handleOAuthLogin = async (provider: 'google' | 'spotify' | 'apple' | 'github') => {
     try {
+      setIsLoading(true);
+      
+      // Clear existing sessions before attempting OAuth
+      await supabase.auth.signOut();
+      
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider,
         options: {
@@ -62,6 +206,7 @@ const Login = () => {
         description: error.message || `Could not authenticate with ${provider}`,
         variant: "destructive"
       });
+      setIsLoading(false);
     }
   };
 

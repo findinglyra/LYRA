@@ -1,10 +1,10 @@
 import { Button } from "@/components/ui/button";
-import { Heart, X, Music2, Headphones, Users, Star, SparklesIcon } from "lucide-react";
+import { Heart, X, Music2, Headphones, Users, Star, SparklesIcon, Loader2 } from "lucide-react";
 import { useProfileStore } from "@/utils/profileStorage";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { useEffect, useState } from "react";
-import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
+import { useToast } from "@/hooks/use-toast";
 
 interface PotentialMatch {
   id: string;
@@ -21,8 +21,10 @@ interface PotentialMatch {
 const Match = () => {
   const profile = useProfileStore((state) => state.profile);
   const navigate = useNavigate();
+  const location = useLocation();
   const { toast } = useToast();
-  const { user, hasProfile, checkAndRedirect } = useAuth();
+  const { user, hasProfile, isAuthenticated, enforceAuthRouting } = useAuth();
+  const [isLoading, setIsLoading] = useState(true);
 
   // Mock potential matches based on user's profile
   const [matches] = useState<PotentialMatch[]>([
@@ -55,10 +57,31 @@ const Match = () => {
       return;
     }
     
-    if (!hasProfile) {
-      checkAndRedirect();
+    if (!hasProfile && isAuthenticated) {
+      enforceAuthRouting(location.pathname);
     }
-  }, [user, hasProfile, navigate, toast, checkAndRedirect]);
+  }, [user, hasProfile, isAuthenticated, navigate, toast, enforceAuthRouting, location.pathname]);
+
+  useEffect(() => {
+    if (!hasProfile) {
+      navigate('/create-profile');
+    } else {
+      // Simulate loading match data
+      const timer = setTimeout(() => {
+        setIsLoading(false);
+      }, 1000);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [hasProfile]);
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-screen bg-gradient-to-br from-gray-900 to-gray-800">
+        <Loader2 className="h-12 w-12 animate-spin text-white" />
+      </div>
+    );
+  }
 
   const handleSwipe = (liked: boolean) => {
     toast({

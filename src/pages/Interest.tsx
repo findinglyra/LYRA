@@ -139,32 +139,57 @@ const Interest = () => {
       message: 'Testing connection to Supabase...'
     });
     
+    console.log('Starting basic connection test with 30s timeout...');
+    
+    // Create a promise that rejects after timeout
+    const timeoutPromise = new Promise((_, reject) => {
+      setTimeout(() => {
+        reject(new Error('Connection test timed out after 30 seconds'));
+      }, 30000);
+    });
+    
+    // Create the actual query promise with retry logic
+    const queryPromise = (async () => {
+      try {
+        console.log('Attempting to query interest_form table...');
+        
+        // First check if we can connect to Supabase at all
+        const authTest = await supabase.auth.getSession();
+        if (authTest.error) {
+          console.error('Auth connection test failed:', authTest.error);
+          return { error: authTest.error, data: null };
+        }
+        
+        // Now try to access the specific table
+        for (let attempt = 0; attempt < 3; attempt++) {
+          try {
+            console.log(`Query attempt ${attempt + 1}/3...`);
+            const response = await supabase
+              .from('interest_form')
+              .select('id', { count: 'exact', head: true });
+            
+            // If we got here without error, return success
+            return response;
+          } catch (attemptError) {
+            console.warn(`Attempt ${attempt + 1} failed:`, attemptError);
+            if (attempt < 2) {
+              // Wait before retrying
+              await new Promise(resolve => setTimeout(resolve, 2000 * Math.pow(2, attempt)));
+            } else {
+              throw attemptError;
+            }
+          }
+        }
+        
+        // This should never be reached due to the loop above, but TypeScript wants a return
+        throw new Error('All retry attempts failed');
+      } catch (error) {
+        console.error('Query execution error:', error);
+        return { error, data: null };
+      }
+    })();
+    
     try {
-      // Log Supabase connection details
-      const connectionDetails = {
-        url: 'Supabase URL configured',
-        anon_key: 'Supabase key configured'
-      };
-      console.log('Supabase connection details:', connectionDetails);
-      
-      // Try a basic validation request with a 20 second timeout
-      console.log('Starting basic connection test with 20s timeout...');
-      
-      // Create a promise that rejects after timeout
-      const timeoutPromise = new Promise((_, reject) => {
-        setTimeout(() => {
-          reject(new Error('Connection test timed out after 20 seconds'));
-        }, 20000);
-      });
-      
-      // Create the actual query promise
-      const queryPromise = (async () => {
-        const response = await supabase
-          .from('interest_form')
-          .select('id', { count: 'exact', head: true });
-        return response;
-      })();
-      
       // Race between timeout and query
       const result = await Promise.race([
         queryPromise,
@@ -191,53 +216,27 @@ const Interest = () => {
         } else if (error.message.includes('JWT')) {
           setConnectionStatus({
             status: 'error',
-            message: 'Authentication error. Please check your Supabase API key.'
+            message: 'Authentication error. Please check your Supabase API keys in the .env file.'
           });
         } else {
           setConnectionStatus({
             status: 'error',
-            message: `Connection failed: ${error.message}`
+            message: `Database error: ${error.message}`
           });
         }
       } else {
-        console.log('Connection successful!', data);
+        // Success!
         setConnectionStatus({
           status: 'success',
-          message: 'Successfully connected to Supabase!'
+          message: 'Connected successfully to Supabase!'
         });
       }
-    } catch (err) {
-      console.error('Connection test exception:', err);
-      
-      // Handle specific error types
-      if (err instanceof Error) {
-        if (err.message.includes('timed out')) {
-          setConnectionStatus({
-            status: 'error',
-            message: 'Connection timed out. Check your network, VPN, or firewall settings.'
-          });
-        } else if (err.message.includes('fetch') || err.message.includes('network')) {
-          setConnectionStatus({
-            status: 'error',
-            message: 'Network error. Check your internet connection and Supabase URL.'
-          });
-        } else if (err.message.includes('abort')) {
-          setConnectionStatus({
-            status: 'error',
-            message: 'Request was aborted. This could be due to network issues.'
-          });
-        } else {
-          setConnectionStatus({
-            status: 'error',
-            message: `Connection error: ${err.message}`
-          });
-        }
-      } else {
-        setConnectionStatus({
-          status: 'error',
-          message: 'Unknown connection error'
-        });
-      }
+    } catch (raceError) {
+      console.error('Connection test exception:', raceError);
+      setConnectionStatus({
+        status: 'error',
+        message: raceError instanceof Error ? raceError.message : 'Unknown connection error'
+      });
     }
   };
 

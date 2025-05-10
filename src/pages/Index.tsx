@@ -24,6 +24,7 @@ import {
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/lib/supabase";
 import { useToast } from "@/hooks/use-toast";
+import { forceSignOut } from "@/utils/authUtils";
 
 const Index = () => {
   const navigate = useNavigate();
@@ -32,23 +33,55 @@ const Index = () => {
   const [isHovered, setIsHovered] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
-  // Get and set user information
+  // Get and set user information using AuthContext instead of direct Supabase calls
   useEffect(() => {
     const checkUser = async () => {
-      const { data } = await supabase.auth.getSession();
-      setUser(data.session?.user || null);
+      try {
+        console.log('Index: Checking user authentication state');
+        const { data, error } = await supabase.auth.getSession();
+        
+        if (error) {
+          console.error('Index: Error getting session:', error);
+          setUser(null);
+          return;
+        }
+        
+        if (data.session) {
+          console.log('Index: User is authenticated');
+          setUser(data.session.user);
+        } else {
+          console.log('Index: No active session found');
+          setUser(null);
+        }
+      } catch (error) {
+        console.error('Index: Exception during auth check:', error);
+        setUser(null);
+      }
     };
     
+    // Check immediately on mount
     checkUser();
     
     // Listen for auth changes
     const { data: authListener } = supabase.auth.onAuthStateChange(
       (event, session) => {
-        setUser(session?.user || null);
+        console.log('Index: Auth state changed -', event);
+        
+        if (event === 'SIGNED_IN' && session) {
+          console.log('Index: User signed in');
+          setUser(session.user);
+        } else if (event === 'SIGNED_OUT') {
+          console.log('Index: User signed out');
+          setUser(null);
+        } else if (event === 'USER_UPDATED' && session) {
+          console.log('Index: User updated');
+          setUser(session.user);
+        }
       }
     );
 
     return () => {
+      console.log('Index: Cleaning up auth listener');
       authListener.subscription.unsubscribe();
     };
   }, []);
@@ -123,14 +156,56 @@ const Index = () => {
               
               {!user ? (
                 <Button 
-                  onClick={() => navigate('/auth')}
+                  onClick={() => {
+                    console.log('Index: Navigating to auth page');
+                    navigate('/auth');
+                  }}
                   className="bg-white/10 hover:bg-white/20 text-white px-4 py-2 rounded-md text-sm transition-colors"
                 >
                   Sign In
                 </Button>
               ) : (
                 <Button 
-                  onClick={() => supabase.auth.signOut()}
+                  onClick={async () => {
+                    try {
+                      console.log('Index: Starting enhanced sign-out process');
+                      
+                      // Update UI immediately for better user experience
+                      setUser(null);
+                      
+                      // Use our robust forceSignOut utility
+                      const success = await forceSignOut();
+                      
+                      if (success) {
+                        console.log('Index: Force sign-out successful');
+                        
+                        // Toast notification
+                        toast({
+                          title: "Signed out",
+                          description: "You have been successfully signed out",
+                        });
+                        
+                        // Force full page reload to ensure clean state
+                        setTimeout(() => {
+                          window.location.href = '/';
+                        }, 300); // Small delay to allow toast to show
+                      } else {
+                        throw new Error('Force sign-out failed');
+                      }
+                    } catch (error) {
+                      console.error('Index: Sign-out error:', error);
+                      toast({
+                        title: "Error signing out",
+                        description: "Please try refreshing the page",
+                        variant: "destructive"
+                      });
+                      
+                      // Last resort - force a full page reload
+                      setTimeout(() => {
+                        window.location.href = '/';
+                      }, 1500);
+                    }
+                  }}
                   className="bg-white/10 hover:bg-white/20 text-white px-4 py-2 rounded-md text-sm transition-colors"
                 >
                   Sign Out

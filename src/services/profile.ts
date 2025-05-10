@@ -20,7 +20,7 @@ export interface MusicPreferences {
 // Transform from app format to database format
 function transformProfileToDb(preferences: MusicPreferences, userId: string) {
   return {
-    user_id: userId,
+    id: userId,
     genres: preferences.genres,
     artists: preferences.artists,
     songs: preferences.songs,
@@ -60,28 +60,71 @@ function transformProfileFromDb(dbProfile: any): MusicPreferences {
 }
 
 export async function saveProfile(userId: string, preferences: MusicPreferences) {
-  const dbData = transformProfileToDb(preferences, userId);
-  
-  const { data, error } = await supabase
-    .from('music_preferences')
-    .upsert(dbData, {
-      onConflict: 'user_id'
-    })
-    .select();
-
-  if (error) {
-    console.error('Error saving profile:', error);
-    throw error;
+  try {
+    console.log('Saving music preferences for user:', userId);
+    
+    // Transform data from app format to database format
+    const dbData = transformProfileToDb(preferences, userId);
+    console.log('Transformed data:', dbData);
+    
+    // First check if a record already exists
+    const { data: existingData, error: fetchError } = await supabase
+      .from('music_preferences')
+      .select('*')
+      .eq('id', userId)
+      .maybeSingle();
+    
+    if (fetchError && fetchError.code !== 'PGRST116') { // PGRST116 means no rows returned
+      console.error('Error checking existing profile:', fetchError);
+      throw new Error(`Failed to check existing profile: ${fetchError.message}`);
+    }
+    
+    let result;
+    
+    if (existingData) {
+      // Update existing record
+      console.log('Updating existing music preferences record');
+      const { data, error } = await supabase
+        .from('music_preferences')
+        .update(dbData)
+        .eq('id', userId)
+        .select();
+      
+      if (error) {
+        console.error('Error updating profile:', error);
+        throw new Error(`Failed to update profile: ${error.message}`);
+      }
+      
+      result = data;
+    } else {
+      // Insert new record
+      console.log('Creating new music preferences record');
+      const { data, error } = await supabase
+        .from('music_preferences')
+        .insert(dbData)
+        .select();
+      
+      if (error) {
+        console.error('Error inserting profile:', error);
+        throw new Error(`Failed to insert profile: ${error.message}`);
+      }
+      
+      result = data;
+    }
+    
+    console.log('Profile saved successfully:', result);
+    return result;
+  } catch (error) {
+    console.error('Unexpected error in saveProfile:', error);
+    throw error instanceof Error ? error : new Error('Unknown error occurred while saving profile');
   }
-
-  return data;
 }
 
 export async function getProfile(userId: string): Promise<MusicPreferences | null> {
   const { data, error } = await supabase
     .from('music_preferences')
     .select('*')
-    .eq('user_id', userId)
+    .eq('id', userId)
     .single();
 
   if (error) {

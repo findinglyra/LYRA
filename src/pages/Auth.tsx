@@ -1,24 +1,24 @@
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useState, useEffect } from "react";
-import { useNavigate, useLocation } from "react-router-dom";
+import { useNavigate, useLocation, Link } from "react-router-dom"; 
 import { 
   Mail, 
-  Key, 
-  Music, 
-  ArrowLeft, 
+  Key,
+  User, 
   Eye, 
   EyeOff, 
-  Star, 
-  MoonStar, 
-  User, 
   LogIn, 
   UserPlus,
-  ArrowRight
+  Loader2, 
+  Music 
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/lib/supabase";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"; 
+import { IconGoogle, IconSpotify } from "@/components/icons";
 
 const Auth = () => {
   const [email, setEmail] = useState("");
@@ -26,478 +26,273 @@ const Auth = () => {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [resetMode, setResetMode] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
-  const [formLoading, setFormLoading] = useState(false); // Overall form loading state
+  const [isLoading, setIsLoading] = useState(false); 
+  const [formLoading, setFormLoading] = useState(false); 
   const [activeTab, setActiveTab] = useState("signup");
   const [passwordError, setPasswordError] = useState("");
   const [emailError, setEmailError] = useState("");
   const navigate = useNavigate();
   const location = useLocation();
-  const { signUp, signIn, resetPassword, user, checkAndRedirect } = useAuth();
+  const { 
+    user, 
+    signIn, 
+    signUp, 
+    enforceAuthRouting, 
+    resetPassword: requestPasswordReset
+  } = useAuth(); 
   const { toast } = useToast();
 
-  const musicServices = [
-    { name: "Spotify", color: "bg-[#1DB954]", icon: Music },
-    { name: "Apple Music", color: "bg-[#FC3C44]", icon: Music },
-    { name: "YouTube Music", color: "bg-[#FF0000]", icon: Music },
-    { name: "Deezer", color: "bg-[#00C7F2]", icon: Music },
-    { name: "Audiomack", color: "bg-[#FFA200]", icon: Music },
-  ];
+  const isDevelopment = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
 
   useEffect(() => {
-    // Check for mode parameter in the URL
     const params = new URLSearchParams(location.search);
     const mode = params.get('mode');
-    
-    if (mode === 'signin') {
+    const tab = params.get('tab');
+
+    if (mode === 'signin' || tab === 'login' || location.pathname === "/login") {
       setActiveTab("login");
-    } else if (location.pathname === "/signup") {
+    } else if (mode === 'signup' || tab === 'signup' || location.pathname === "/signup") {
       setActiveTab("signup");
-    } else if (location.pathname === "/login") {
-      setActiveTab("login");
     }
   }, [location.pathname, location.search]);
 
-  // Email validation function
+  useEffect(() => {
+    if (user) {
+      enforceAuthRouting(location.pathname);
+    }
+  }, [user, enforceAuthRouting, location.pathname]);
+
   const validateEmail = (email: string): boolean => {
     const regex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    return regex.test(email);
+    if (!regex.test(email)) {
+      setEmailError("Please enter a valid email address.");
+      return false;
+    }
+    setEmailError("");
+    return true;
+  };
+
+  const validatePasswords = (pass: string, confirmPass?: string) => {
+    if (pass.length < 8) {
+      setPasswordError("Password must be at least 8 characters.");
+      return false;
+    }
+    if (confirmPass !== undefined && pass !== confirmPass) {
+      setPasswordError("Passwords don't match.");
+      return false;
+    }
+    setPasswordError("");
+    return true;
   };
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!validateEmail(email) || !validatePasswords(password, confirmPassword)) return;
+
     setIsLoading(true);
-    setFormLoading(true);
-    setPasswordError("");
-    setEmailError("");
-
-    // Validate email format
-    if (!validateEmail(email)) {
-      setEmailError("Please enter a valid email address");
-      setIsLoading(false);
-      setFormLoading(false);
-      return;
-    }
-
-    // Validate passwords match
-    if (password !== confirmPassword) {
-      setPasswordError("Passwords don't match");
-      setIsLoading(false);
-      setFormLoading(false);
-      return;
-    }
-
-    // Validate password strength
-    if (password.length < 8) {
-      setPasswordError("Password must be at least 8 characters");
-      setIsLoading(false);
-      setFormLoading(false);
-      return;
-    }
-
     try {
       await signUp(email, password);
       toast({
-        title: "Account created!",
-        description: "Please check your email to verify your account."
+        title: "Verification Email Sent!",
+        description: "Please check your email to verify your Lyra account.",
       });
-      setActiveTab("login");
+      setActiveTab("login"); 
+      setEmail(""); 
+      setPassword("");
+      setConfirmPassword("");
     } catch (error: unknown) {
-      console.error('Authentication error:', error);
-      const errorMessage = error instanceof Error ? error.message : "An unexpected error occurred";
-      toast({
-        title: "Account creation failed",
-        description: errorMessage,
-        variant: "destructive"
-      });
+      const errorMessage = error instanceof Error ? error.message : "An unexpected error occurred during sign up.";
+      toast({ title: "Sign Up Failed", description: errorMessage, variant: "destructive" });
     } finally {
       setIsLoading(false);
-      setFormLoading(false);
     }
   };
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!validateEmail(email) || !validatePasswords(password)) return;
+
     setIsLoading(true);
-    setFormLoading(true);
-    setEmailError("");
-
-    // Validate email format if not in reset mode
-    if (!resetMode && !validateEmail(email)) {
-      setEmailError("Please enter a valid email address");
-      setIsLoading(false);
-      setFormLoading(false);
-      return;
-    }
-
     try {
-      if (resetMode) {
-        await resetPassword(email);
-        toast({
-          title: "Reset link sent",
-          description: "Check your email for password reset instructions"
-        });
-        setResetMode(false);
-      } else {
-        await signIn(email, password);
-        toast({
-          title: "Sign in successful",
-          description: "Welcome back to Lyra!"
-        });
-        try {
-          await checkAndRedirect();
-        } catch (redirectError) {
-          // Fallback if redirect fails
-          console.error("Redirect failed:", redirectError);
-          navigate('/');
-        }
-      }
+      await signIn(email, password);
     } catch (error: unknown) {
-      console.error('Authentication error:', error);
-      const errorMessage = error instanceof Error ? error.message : "Invalid email or password";
-      toast({
-        title: "Authentication failed",
-        description: errorMessage,
-        variant: "destructive"
-      });
+      const errorMessage = error instanceof Error ? error.message : "Invalid email or password.";
+      toast({ title: "Sign In Failed", description: errorMessage, variant: "destructive" });
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handlePasswordResetRequest = async () => {
+    if (!validateEmail(email)) return;
+    setIsLoading(true);
+    try {
+      await requestPasswordReset(email);
+      toast({
+        title: "Password Reset Email Sent",
+        description: "If an account exists for this email, you'll receive reset instructions.",
+      });
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : "Failed to send reset email.";
+      toast({ title: "Reset Failed", description: errorMessage, variant: "destructive" });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+  
+  const handleSocialAuth = async (provider: 'google' | 'spotify') => {
+    setFormLoading(true);
+    try {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider,
+        options: {
+          redirectTo: `${window.location.origin}/auth/callback`,
+        },
+      });
+      if (error) throw error;
+    } catch (error: any) {
+      toast({ title: "Authentication Failed", description: error.message || `Could not sign in with ${provider}.`, variant: "destructive" });
       setFormLoading(false);
     }
   };
 
-  const togglePasswordVisibility = () => {
-    setShowPassword(!showPassword);
-  };
-
-  const toggleConfirmPasswordVisibility = () => {
-    setShowConfirmPassword(!showConfirmPassword);
-  };
-
-  // Handle social authentication
-  const handleSocialAuth = (provider: string) => {
-    toast({
-      title: "Coming soon",
-      description: `${provider} authentication will be available soon!`,
-    });
-    // When ready to implement:
-    // supabase.auth.signInWithOAuth({ provider: provider.toLowerCase() });
-  };
+  const renderFormFields = (isSignUp: boolean) => (
+    <>
+      <div className="relative space-y-1">
+        <label htmlFor={isSignUp ? "signup-email" : "login-email"} className="text-sm font-medium text-muted-foreground">Email</label>
+        <Mail className="absolute left-3 top-1/2 transform -translate-y-0.5 h-5 w-5 text-muted-foreground" />
+        <Input 
+          id={isSignUp ? "signup-email" : "login-email"} 
+          type="email" 
+          placeholder="astronaut@galaxy.com" 
+          value={email} 
+          onChange={(e) => { setEmail(e.target.value); setEmailError(''); }} 
+          className={`pl-10 sleek-input ${emailError ? 'border-destructive' : ''}`} 
+          required 
+        />
+        {emailError && <p className="text-xs text-destructive pt-1">{emailError}</p>}
+      </div>
+      <div className="relative space-y-1">
+        <label htmlFor={isSignUp ? "signup-password" : "login-password"} className="text-sm font-medium text-muted-foreground">Password</label>
+        <Key className="absolute left-3 top-1/2 transform -translate-y-0.5 h-5 w-5 text-muted-foreground" />
+        <Input 
+          id={isSignUp ? "signup-password" : "login-password"} 
+          type={showPassword ? "text" : "password"} 
+          placeholder="Your Secret Starmap" 
+          value={password} 
+          onChange={(e) => { setPassword(e.target.value); setPasswordError(''); }} 
+          className={`pl-10 sleek-input ${passwordError && !isSignUp ? 'border-destructive' : ''}`} 
+          required 
+        />
+        <Button type="button" variant="ghost" size="icon" className="absolute right-2 top-1/2 transform -translate-y-0.5 h-7 w-7 text-muted-foreground hover:text-foreground" onClick={() => setShowPassword(!showPassword)}>
+          {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+        </Button>
+        {passwordError && !isSignUp && <p className="text-xs text-destructive pt-1">{passwordError}</p>}
+      </div>
+      {isSignUp && (
+        <div className="relative space-y-1">
+          <label htmlFor="confirm-password" className="text-sm font-medium text-muted-foreground">Confirm Password</label>
+          <Key className="absolute left-3 top-1/2 transform -translate-y-0.5 h-5 w-5 text-muted-foreground" />
+          <Input 
+            id="confirm-password" 
+            type={showConfirmPassword ? "text" : "password"} 
+            placeholder="Confirm Your Starmap" 
+            value={confirmPassword} 
+            onChange={(e) => { setConfirmPassword(e.target.value); setPasswordError(''); }} 
+            className={`pl-10 sleek-input ${passwordError && isSignUp ? 'border-destructive' : ''}`} 
+            required 
+          />
+          <Button type="button" variant="ghost" size="icon" className="absolute right-2 top-1/2 transform -translate-y-0.5 h-7 w-7 text-muted-foreground hover:text-foreground" onClick={() => setShowConfirmPassword(!showConfirmPassword)}>
+            {showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+          </Button>
+          {passwordError && isSignUp && <p className="text-xs text-destructive pt-1">{passwordError}</p>}
+        </div>
+      )}
+    </>
+  );
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center p-4 relative" style={{
-      backgroundImage: "url('/index3.jpg')",
-      backgroundSize: "cover",
-      backgroundPosition: "center",
-      boxShadow: "inset 0 0 150px rgba(0,0,0,0.5)"
-    }}>
-      {/* Dark overlay with adjusted opacity for better contrast - no blur */}
-      <div className="absolute inset-0 bg-gradient-to-b from-[rgba(10,20,40,0.5)] to-[rgba(5,15,35,0.6)] z-0"></div>
-      
-      <div className="w-full max-w-md space-y-8 bg-black/20 p-8 relative z-10 rounded-2xl border border-white/20">
-        <Button
-          variant="ghost"
-          className="mb-4 hover:bg-white/10 text-white transition-colors"
-          onClick={() => navigate("/")}
-        >
-          <ArrowLeft className="mr-2 h-4 w-4" />
-          Back to Home
-        </Button>
-
-        <div className="flex justify-center mb-4">
-          <MoonStar className="h-8 w-8 text-primary" />
-        </div>
-
-        {formLoading && (
-          <div className="absolute inset-0 flex items-center justify-center bg-black/30 backdrop-blur-sm rounded-2xl z-20">
-            <div className="text-center">
-              <div className="inline-block animate-spin rounded-full h-8 w-8 border-t-2 border-primary border-r-2 border-white/20 mb-2"></div>
-              <p className="text-white text-sm">Processing...</p>
+    <div className="min-h-screen flex flex-col items-center justify-center p-4 cosmic-bg">
+      <Card className="w-full max-w-md bg-card/70 backdrop-blur-md border-[hsl(var(--border)/0.2)] shadow-2xl shadow-[hsl(var(--primary)/0.1)] animate-fadeIn">
+        <CardHeader className="text-center">
+          <Link to="/" className="inline-block mb-4">
+            <h1 className="lyra-logo text-6xl">
+              <Music size={48} className="inline-block mr-2 drop-shadow-lg" />Lyra
+            </h1>
+          </Link>
+          <CardTitle className="text-2xl font-semibold tracking-tight text-foreground">Welcome to the Cosmos</CardTitle>
+          <CardDescription className="text-muted-foreground">
+            {activeTab === "signup" ? "Chart your course among the stars." : "Log in to continue your stellar journey."}
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="pb-0">
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+            <TabsList className="grid w-full grid-cols-2 bg-muted/40 border border-[hsl(var(--border)/0.1)]">
+              <TabsTrigger value="signup" className="data-[state=active]:bg-[hsl(var(--primary)/0.9)] data-[state=active]:text-primary-foreground data-[state=active]:shadow-md py-2.5 rounded-md">
+                <UserPlus className="mr-2 h-4 w-4" /> Sign Up
+              </TabsTrigger>
+              <TabsTrigger value="login" className="data-[state=active]:bg-[hsl(var(--primary)/0.9)] data-[state=active]:text-primary-foreground data-[state=active]:shadow-md py-2.5 rounded-md">
+                <LogIn className="mr-2 h-4 w-4" /> Sign In
+              </TabsTrigger>
+            </TabsList>
+            <TabsContent value="signup" className="mt-6">
+              <form onSubmit={handleSignUp} className="space-y-4">
+                {renderFormFields(true)}
+                <Button type="submit" className="w-full sleek-button font-semibold py-3" disabled={isLoading || formLoading}>
+                  {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <UserPlus className="mr-2 h-4 w-4" />} Create Account
+                </Button>
+              </form>
+            </TabsContent>
+            <TabsContent value="login" className="mt-6">
+              <form onSubmit={handleSignIn} className="space-y-4">
+                {renderFormFields(false)}
+                <Button type="submit" className="w-full sleek-button font-semibold py-3" disabled={isLoading || formLoading}>
+                  {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <LogIn className="mr-2 h-4 w-4" />} Sign In
+                </Button>
+                <div className="text-center mt-2">
+                  <Button type="button" variant="link" className="text-sm text-[hsl(var(--accent))] hover:text-[hsl(var(--primary))] px-0" onClick={handlePasswordResetRequest} disabled={isLoading || formLoading || !email || emailError !== ''}>
+                    Forgot Starmap? (Reset Password)
+                  </Button>
+                </div>
+              </form>
+            </TabsContent>
+          </Tabs>
+        </CardContent>
+        <CardFooter className="flex-col pt-6">
+          <div className="relative w-full my-3">
+            <div className="absolute inset-0 flex items-center">
+              <span className="w-full border-t border-[hsl(var(--border)/0.2)]" />
+            </div>
+            <div className="relative flex justify-center text-xs uppercase">
+              <span className="bg-card/0 px-2 text-muted-foreground">Or continue with</span>
             </div>
           </div>
-        )}
-
-        <Tabs defaultValue={activeTab} value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid grid-cols-2 mb-6 bg-black/30 border border-white/10">
-            <TabsTrigger 
-              value="signup" 
-              className="flex items-center gap-2 data-[state=active]:bg-gradient-to-r data-[state=active]:from-[hsl(var(--primary))] data-[state=active]:to-[hsl(var(--accent))] data-[state=active]:text-white text-white/80 hover:text-white hover:bg-white/10 transition-colors"
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 w-full mt-3">
+            <Button variant="outline" className="w-full border-[hsl(var(--border)/0.3)] hover:bg-muted/50 text-muted-foreground hover:text-foreground" onClick={() => handleSocialAuth('google')} disabled={formLoading || isLoading}>
+              {formLoading && 'google' ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <IconGoogle className="mr-2 h-5 w-5" />} Google
+            </Button>
+            <Button variant="outline" className="w-full border-[hsl(var(--border)/0.3)] hover:bg-muted/50 text-muted-foreground hover:text-foreground" onClick={() => handleSocialAuth('spotify')} disabled={formLoading || isLoading}>
+              {formLoading && 'spotify' ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <IconSpotify className="mr-2 h-5 w-5" />} Spotify
+            </Button>
+          </div>
+          <p className="mt-6 text-center text-sm text-muted-foreground">
+            {activeTab === 'signup' ? 'Already have a cosmic pass? ' : 'New to the Lyra constellation? '}
+            <button 
+              onClick={() => setActiveTab(activeTab === 'signup' ? 'login' : 'signup')} 
+              className="font-semibold text-[hsl(var(--accent))] hover:text-[hsl(var(--primary))] underline-offset-4 hover:underline"
             >
-              <UserPlus className="h-4 w-4" />
-              Create Account
-            </TabsTrigger>
-            <TabsTrigger 
-              value="login" 
-              className="flex items-center gap-2 data-[state=active]:bg-gradient-to-r data-[state=active]:from-[hsl(var(--primary))] data-[state=active]:to-[hsl(var(--accent))] data-[state=active]:text-white text-white/80 hover:text-white hover:bg-white/10 transition-colors"
-            >
-              <LogIn className="h-4 w-4" />
-              Sign In
-            </TabsTrigger>
-          </TabsList>
-          
-          {/* Sign Up Form */}
-          <TabsContent value="signup" className="space-y-4">
-            <div className="text-center mb-6">
-              <h2 className="text-2xl font-bold text-white text-shadow-sm">Join the constellation</h2>
-              <p className="text-white/80 text-shadow-sm">Begin your stellar journey with Lyra</p>
-            </div>
-            
-            <form onSubmit={handleSignUp} className="space-y-4">
-              <div className="space-y-2">
-                <div className="relative">
-                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-white/70" />
-                  <Input
-                    type="email"
-                    placeholder="Email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    className="h-12 pl-10 bg-black/30 border-white/20 text-white placeholder:text-white/50 focus:border-white/40 focus:ring-0"
-                    required
-                  />
-                  {emailError && <p className="text-red-400 text-sm mt-1">{emailError}</p>}
-                </div>
-                
-                <div className="relative">
-                  <Key className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-white/70" />
-                  <Input
-                    type={showPassword ? "text" : "password"}
-                    placeholder="Password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    className="h-12 pl-10 bg-black/30 border-white/20 text-white placeholder:text-white/50 focus:border-white/40 focus:ring-0"
-                    required
-                  />
-                  <button
-                    type="button"
-                    onClick={togglePasswordVisibility}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-white/70 hover:text-white"
-                  >
-                    {showPassword ? (
-                      <EyeOff size={16} />
-                    ) : (
-                      <Eye size={16} />
-                    )}
-                  </button>
-                </div>
-                
-                <div className="relative">
-                  <Key className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-white/70" />
-                  <Input
-                    type={showConfirmPassword ? "text" : "password"}
-                    placeholder="Confirm Password"
-                    value={confirmPassword}
-                    onChange={(e) => setConfirmPassword(e.target.value)}
-                    className="h-12 pl-10 bg-black/30 border-white/20 text-white placeholder:text-white/50 focus:border-white/40 focus:ring-0"
-                  />
-                  <button
-                    type="button"
-                    onClick={toggleConfirmPasswordVisibility}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-white/70 hover:text-white"
-                  >
-                    {showConfirmPassword ? (
-                      <EyeOff size={16} />
-                    ) : (
-                      <Eye size={16} />
-                    )}
-                  </button>
-                  {passwordError && <p className="text-red-400 text-sm mt-1">{passwordError}</p>}
-                </div>
-              </div>
-
-              <Button 
-                type="submit" 
-                className="w-full h-12 bg-gradient-to-r from-[hsl(var(--primary))] to-[hsl(var(--accent))] text-white font-medium hover:shadow-glow transition-all"
-                disabled={isLoading}
-              >
-                {isLoading ? "Creating Account..." : "Create Account"}
-                <UserPlus className="ml-2 h-4 w-4" />
-              </Button>
-              
-              <div className="text-center text-sm">
-                <p className="text-white/70">
-                  Already have an account?{" "}
-                  <button
-                    type="button"
-                    className="text-primary hover:text-accent transition-colors font-medium"
-                    onClick={() => setActiveTab("login")}
-                  >
-                    Sign in
-                  </button>
-                </p>
-              </div>
-            </form>
-            
-            <div className="relative mt-6">
-              <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-[hsla(var(--pale-yellow),0.2)]"></div>
-              </div>
-              <div className="relative flex justify-center text-xs uppercase">
-                <span className="bg-[hsla(var(--dark-blue),0.4)] px-2 text-white/70">
-                  Or continue with
-                </span>
-              </div>
-            </div>
-
-            <div className="grid gap-2">
-              {musicServices.map((service) => (
-                <Button
-                  key={service.name}
-                  variant="outline"
-                  className="h-12 glass-card border-[hsla(var(--pale-yellow),0.2)] hover:border-[hsla(var(--pale-yellow),0.4)] text-white"
-                  type="button"
-                  onClick={() => handleSocialAuth(service.name)}
-                >
-                  <service.icon className="mr-2 h-4 w-4" />
-                  Continue with {service.name}
-                </Button>
-              ))}
-            </div>
-          </TabsContent>
-          
-          {/* Login Form */}
-          <TabsContent value="login" className="space-y-4">
-            <div className="text-center mb-6">
-              <h2 className="text-2xl font-bold text-white text-shadow-sm">Welcome Back</h2>
-              <p className="text-white/80 text-shadow-sm">Continue your cosmic journey</p>
-            </div>
-            
-            {resetMode ? (
-              <form onSubmit={handleSignIn} className="space-y-4">
-                <div className="space-y-2">
-                  <div className="relative">
-                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-white/70" />
-                    <Input
-                      type="email"
-                      placeholder="Email"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      className="h-12 pl-10 bg-black/30 border-white/20 text-white placeholder:text-white/50 focus:border-white/40 focus:ring-0"
-                      required
-                    />
-                    {emailError && <p className="text-red-400 text-sm mt-1">{emailError}</p>}
-                  </div>
-                </div>
-
-                <Button 
-                  type="submit" 
-                  className="w-full h-12 bg-gradient-to-r from-[hsl(var(--primary))] to-[hsl(var(--accent))] text-white font-medium hover:shadow-glow transition-all"
-                  disabled={isLoading}
-                >
-                  {isLoading ? "Sending Reset Link..." : "Send Reset Link"}
-                  <Mail className="ml-2 h-4 w-4" />
-                </Button>
-                
-                <div className="text-center mt-4">
-                  <button
-                    type="button"
-                    className="text-primary hover:text-accent transition-colors font-medium"
-                    onClick={() => setResetMode(false)}
-                  >
-                    Back to Sign In
-                  </button>
-                </div>
-              </form>
-            ) : (
-              <form onSubmit={handleSignIn} className="space-y-4">
-                <div className="space-y-2">
-                  <div className="relative">
-                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-white/70" />
-                    <Input
-                      type="email"
-                      placeholder="Email"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      className="h-12 pl-10 bg-black/30 border-white/20 text-white placeholder:text-white/50 focus:border-white/40 focus:ring-0"
-                      required
-                    />
-                    {emailError && <p className="text-red-400 text-sm mt-1">{emailError}</p>}
-                  </div>
-                  
-                  <div className="relative">
-                    <Key className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-white/70" />
-                    <Input
-                      type={showPassword ? "text" : "password"}
-                      placeholder="Password"
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      className="h-12 pl-10 bg-black/30 border-white/20 text-white placeholder:text-white/50 focus:border-white/40 focus:ring-0"
-                      required
-                    />
-                    <button
-                      type="button"
-                      onClick={togglePasswordVisibility}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-white/70 hover:text-white"
-                    >
-                      {showPassword ? (
-                        <EyeOff size={16} />
-                      ) : (
-                        <Eye size={16} />
-                      )}
-                    </button>
-                  </div>
-                </div>
-
-                <Button 
-                  type="submit" 
-                  className="w-full h-12 bg-gradient-to-r from-[hsl(var(--primary))] to-[hsl(var(--accent))] text-white font-medium hover:shadow-glow transition-all"
-                  disabled={isLoading}
-                >
-                  {isLoading ? "Signing In..." : "Sign In"}
-                  <LogIn className="ml-2 h-4 w-4" />
-                </Button>
-                
-                <div className="flex justify-between text-sm">
-                  <button
-                    type="button"
-                    className="text-primary hover:text-accent transition-colors font-medium"
-                    onClick={() => setResetMode(true)}
-                  >
-                    Forgot password?
-                  </button>
-                  <button
-                    type="button"
-                    className="text-primary hover:text-accent transition-colors font-medium"
-                    onClick={() => setActiveTab("signup")}
-                  >
-                    Create account
-                  </button>
-                </div>
-              </form>
-            )}
-            
-            {!resetMode && (
-              <>
-                <div className="relative mt-6">
-                  <div className="absolute inset-0 flex items-center">
-                    <div className="w-full border-t border-[hsla(var(--pale-yellow),0.2)]"></div>
-                  </div>
-                  <div className="relative flex justify-center text-xs uppercase">
-                    <span className="bg-[hsla(var(--dark-blue),0.4)] px-2 text-white/70">
-                      Or continue with
-                    </span>
-                  </div>
-                </div>
-
-                <div className="grid gap-2">
-                  {musicServices.map((service) => (
-                    <Button
-                      key={service.name}
-                      variant="outline"
-                      className="h-12 glass-card border-[hsla(var(--pale-yellow),0.2)] hover:border-[hsla(var(--pale-yellow),0.4)] text-white"
-                      type="button"
-                      onClick={() => handleSocialAuth(service.name)}
-                    >
-                      <service.icon className="mr-2 h-4 w-4" />
-                      Continue with {service.name}
-                    </Button>
-                  ))}
-                </div>
-              </>
-            )}
-          </TabsContent>
-        </Tabs>
-      </div>
+              {activeTab === 'signup' ? 'Sign In' : 'Sign Up'}
+            </button>
+          </p>
+        </CardFooter>
+      </Card>
+      {isDevelopment && (
+        <div className="mt-8 p-4 bg-slate-800/50 rounded-lg text-xs text-slate-400 max-w-md w-full">
+          <h3 className="font-semibold text-slate-300 mb-2">Dev Quick Auth:</h3>
+          <p>Use <code className="bg-slate-700 px-1 rounded">test@example.com</code> / <code className="bg-slate-700 px-1 rounded">password</code> for quick login/signup.</p>
+          {user && <p className="mt-1">Logged in as: {user.email}</p>}
+        </div>
+      )}
     </div>
   );
 };

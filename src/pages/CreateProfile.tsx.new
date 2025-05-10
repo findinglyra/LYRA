@@ -1,0 +1,315 @@
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import { useToast } from "@/hooks/use-toast";
+import { updateUserProfile, setUserBirthDate, createUserProfile, getUserProfile } from "@/services/user-profile";
+import { useAuth } from "@/contexts/AuthContext";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { CalendarIcon } from "lucide-react";
+import { format } from "date-fns";
+
+const CreateProfile = () => {
+  const navigate = useNavigate();
+  const { toast } = useToast();
+  const { user } = useAuth();
+  const [isLoading, setIsLoading] = useState(false);
+  const [date, setDate] = useState<Date>();
+  const [fullName, setFullName] = useState("");
+  const [bio, setBio] = useState("");
+  const [username, setUsername] = useState("");
+  const [location, setLocation] = useState("");
+  const [profileImageUrl, setProfileImageUrl] = useState("");
+  const [socialMediaLinks, setSocialMediaLinks] = useState({
+    instagram: "",
+    spotify: "",
+    twitter: "",
+  });
+
+  // Set default username from user email
+  useEffect(() => {
+    if (user?.email) {
+      // Use part before @ as default username
+      const defaultUsername = user.email.split('@')[0];
+      setUsername(defaultUsername);
+    }
+  }, [user]);
+
+  // Redirect if not logged in
+  useEffect(() => {
+    if (!user) {
+      toast({
+        title: "Not authenticated",
+        description: "Please log in to create your profile",
+        variant: "destructive"
+      });
+      navigate("/login");
+    }
+  }, [user, navigate, toast]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    // Basic validation
+    if (!fullName.trim() || !username.trim() || !date || !bio.trim()) {
+      toast({
+        title: "Missing information",
+        description: "Please fill out all required fields",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Check if user is authenticated
+    if (!user) {
+      toast({
+        title: "Not authenticated",
+        description: "Please log in to create your profile",
+        variant: "destructive",
+      });
+      navigate("/login");
+      return;
+    }
+
+    try {
+      setIsLoading(true);
+      
+      console.log("Creating basic profile with:")
+      console.log("- User ID:", user.id);
+      console.log("- Full Name:", fullName);
+      console.log("- Username:", username);
+      console.log("- Location:", location);
+      console.log("- Bio:", bio);
+      console.log("- Birth Date:", date);
+      console.log("- Profile Image:", profileImageUrl);
+      console.log("- Social Media:", socialMediaLinks);
+
+      // Format birth date in ISO format (YYYY-MM-DD)
+      const birthDateISO = date.toISOString().split('T')[0];
+
+      // Save user profile data to the profiles table
+      console.log("Saving user data to profiles table");
+      // Prepare social media links as JSON
+      const socialLinksJson = JSON.stringify(socialMediaLinks);
+      
+      // Try to create a new profile (in case trigger didn't work)
+      let profile = await createUserProfile({
+        full_name: fullName,
+        bio: bio,
+        username: username,
+        location: location,
+        avatar_url: profileImageUrl || null,
+        social_links: socialLinksJson,
+      }, user.id);
+      
+      // If profile exists, update it instead
+      if (!profile) {
+        console.log("Profile already exists, updating instead");
+        profile = await updateUserProfile({
+          full_name: fullName,
+          bio: bio,
+          username: username,
+          location: location,
+          avatar_url: profileImageUrl || null,
+          social_links: socialLinksJson,
+        }, user.id);
+      }
+      
+      // Set birth date (this also sets zodiac sign)
+      if (profile) {
+        await setUserBirthDate(birthDateISO, user.id);
+        console.log("Birth date and zodiac sign set successfully");
+      } else {
+        throw new Error("Failed to create or update profile in profiles table");
+      }
+
+      // Verify profile data was saved properly
+      try {
+        const updatedProfile = await getUserProfile(user.id);
+        
+        const hasCompleteProfile = !!updatedProfile && !!updatedProfile.full_name && !!updatedProfile.birth_date;
+        
+        if (!hasCompleteProfile) {
+          console.warn("Profile creation incomplete - missing essential data");
+          throw new Error("Profile creation incomplete");
+        }
+        
+        console.log("Profile verification successful");
+      } catch (verifyError) {
+        console.error("Error verifying profile completion:", verifyError);
+        throw new Error("Could not verify profile creation");
+      }
+
+      // Show success message
+      toast({
+        title: "Profile created successfully!",
+        description: "Now let's set up your music preferences",
+      });
+
+      // Redirect to music preferences page to complete the second part
+      console.log("Basic profile created, redirecting to music preferences page");
+      navigate("/music-preferences");
+    } catch (error) {
+      console.error("Error saving profile:", error);
+      toast({
+        title: "Error creating profile",
+        description: typeof error === 'object' && error !== null && 'message' in error
+          ? String(error.message)
+          : "There was a problem saving your profile. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  return (
+    <div className="max-w-4xl mx-auto p-6 space-y-8 animate-fadeIn">
+      <div className="flex justify-between items-center">
+        <div className="space-y-2">
+          <h1 className="text-3xl font-bold tracking-tight">Create Your Profile</h1>
+          <p className="text-muted-foreground">
+            Tell us about yourself to help find your perfect musical match
+          </p>
+        </div>
+      </div>
+
+      <form onSubmit={handleSubmit} className="space-y-8">
+        {/* Personal Info */}
+        <div className="space-y-4">
+          <h2 className="text-xl font-semibold">Personal Information</h2>
+          
+          <div className="space-y-2">
+            <Label htmlFor="fullName">Full Name</Label>
+            <Input
+              id="fullName"
+              placeholder="Your full name"
+              value={fullName}
+              onChange={(e) => setFullName(e.target.value)}
+              required
+            />
+          </div>
+          
+          <div className="space-y-2">
+            <Label htmlFor="username">Username</Label>
+            <Input
+              id="username"
+              placeholder="Choose a unique username"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              required
+            />
+            <p className="text-sm text-muted-foreground">This will be visible to others on the platform.</p>
+          </div>
+          
+          <div className="space-y-2">
+            <Label htmlFor="location">Location</Label>
+            <Input
+              id="location"
+              placeholder="City, Country"
+              value={location}
+              onChange={(e) => setLocation(e.target.value)}
+            />
+            <p className="text-sm text-muted-foreground">Help find matches in your area.</p>
+          </div>
+          
+          <div className="space-y-2">
+            <Label>Birth Date</Label>
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  className="w-full justify-start text-left font-normal"
+                >
+                  <CalendarIcon className="mr-2 h-4 w-4" />
+                  {date ? format(date, "PPP") : <span>Pick a date</span>}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0 z-50" align="start">
+                <Calendar
+                  mode="single"
+                  selected={date}
+                  onSelect={setDate}
+                  disabled={(date) => date > new Date() || date < new Date("1900-01-01")}
+                  initialFocus
+                  className="border rounded-md bg-white shadow-md"
+                />
+              </PopoverContent>
+            </Popover>
+            <p className="text-sm text-muted-foreground">We use this to determine your zodiac sign.</p>
+          </div>
+          
+          <div className="space-y-2">
+            <Label htmlFor="profileImageUrl">Profile Image URL</Label>
+            <Input
+              id="profileImageUrl"
+              placeholder="https://example.com/your-image.jpg"
+              value={profileImageUrl}
+              onChange={(e) => setProfileImageUrl(e.target.value)}
+            />
+            <p className="text-sm text-muted-foreground">Add a link to your profile picture.</p>
+          </div>
+          
+          <div className="space-y-2">
+            <Label>Social Media Links</Label>
+            <div className="space-y-3">
+              <div className="flex items-center space-x-2">
+                <span className="w-20 text-sm">Instagram:</span>
+                <Input
+                  placeholder="@username"
+                  value={socialMediaLinks.instagram}
+                  onChange={(e) => setSocialMediaLinks(prev => ({ ...prev, instagram: e.target.value }))}
+                />
+              </div>
+              <div className="flex items-center space-x-2">
+                <span className="w-20 text-sm">Spotify:</span>
+                <Input
+                  placeholder="Username or profile URL"
+                  value={socialMediaLinks.spotify}
+                  onChange={(e) => setSocialMediaLinks(prev => ({ ...prev, spotify: e.target.value }))}
+                />
+              </div>
+              <div className="flex items-center space-x-2">
+                <span className="w-20 text-sm">Twitter:</span>
+                <Input
+                  placeholder="@username"
+                  value={socialMediaLinks.twitter}
+                  onChange={(e) => setSocialMediaLinks(prev => ({ ...prev, twitter: e.target.value }))}
+                />
+              </div>
+            </div>
+          </div>
+          
+          <div className="space-y-2">
+            <Label htmlFor="bio">About You</Label>
+            <Textarea
+              id="bio"
+              placeholder="Tell us a bit about yourself and your musical journey"
+              value={bio}
+              onChange={(e) => setBio(e.target.value)}
+              className="min-h-24"
+            />
+          </div>
+        </div>
+        
+        <div className="flex justify-between">
+          <Button 
+            type="button"
+            variant="outline"
+            onClick={() => navigate(-1)}
+          >
+            Back
+          </Button>
+          <Button type="submit" disabled={isLoading}>
+            {isLoading ? "Saving..." : "Continue to Music Preferences"}
+          </Button>
+        </div>
+      </form>
+    </div>
+  );
+};
+
+export default CreateProfile;

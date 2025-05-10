@@ -76,4 +76,32 @@ const CardFooter = React.forwardRef<
 ))
 CardFooter.displayName = "CardFooter"
 
-export { Card, CardHeader, CardFooter, CardTitle, CardDescription, CardContent }
+// Add LYRA-specific card variants
+const LyraCard = React.forwardRef<
+  HTMLDivElement,
+  React.HTMLAttributes<HTMLDivElement> & { variant?: 'babyBlue' | 'blueGrotto' | 'mediumBlue' | 'navyBlue' | 'gradient' | 'glass' }
+>(({ className, variant, ...props }, ref) => {
+  const variantClasses = {
+    babyBlue: "bg-[#68bbe3]/10 border-[#68bbe3]/20 text-[#003060]",
+    blueGrotto: "bg-[#0e86d4]/10 border-[#0e86d4]/20 text-[#003060]",
+    mediumBlue: "bg-[#055c9d]/10 border-[#055c9d]/20 text-white",
+    navyBlue: "bg-[#003060]/10 border-[#003060]/20 text-white",
+    gradient: "bg-gradient-to-br from-[#68bbe3]/10 to-[#003060]/20 border-[#0e86d4]/20 text-[#003060]",
+    glass: "bg-white/10 backdrop-blur-md border-white/20 text-white",
+  }
+
+  return (
+    <div
+      ref={ref}
+      className={cn(
+        "rounded-lg border shadow-sm",
+        variant ? variantClasses[variant] : "bg-card text-card-foreground",
+        className
+      )}
+      {...props}
+    />
+  )
+})
+LyraCard.displayName = "LyraCard"
+
+export { Card, CardHeader, CardFooter, CardTitle, CardDescription, CardContent, LyraCard }
