@@ -5,7 +5,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
-import { updateUserProfile, setUserBirthDate, createUserProfile, getUserProfile, updateSocialMediaLinks } from "@/services/user-profile";
+import { createUserProfile, updateUserProfile, getUserProfile, Profile, setUserBirthDate } from "@/services/user-profile";
 import { useAuth } from "@/contexts/AuthContext";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -17,50 +17,15 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
+import { parseISO } from 'date-fns'; // Added for robust date parsing
+import { useTheme } from "next-themes"; // Added import
 
 const CreateProfile = () => {
-  const { user, hasProfile, invalidateProfileCache } = useAuth();
-  const { toast } = useToast();
+  const { user, hasCoreProfile: hasProfile, loading: authLoading, completionCheckLoading, isAuthenticated, invalidateProfileCache } = useAuth();
   const navigate = useNavigate();
-  const [isLoading, setIsLoading] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [date, setDate] = useState<Date>();
-  const [fullName, setFullName] = useState("");
-  const [bio, setBio] = useState("");
-  const [username, setUsername] = useState("");
-  const [location, setLocation] = useState("");
-  const [profileImageUrl, setProfileImageUrl] = useState("");
-  const [profileImageFile, setProfileImageFile] = useState<File | null>(null);
-  const [imagePreview, setImagePreview] = useState<string | null>(null);
-  const [isUploading, setIsUploading] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  
-  // Social media links with expanded functionality
-  const [socialMediaLinks, setSocialMediaLinks] = useState({
-    instagram: "",
-    spotify: "",
-    twitter: "",
-    soundcloud: "",
-    tiktok: ""
-  });
-  
-  // Track which social platforms are valid
-  const [validSocialLinks, setValidSocialLinks] = useState({
-    instagram: true,
-    spotify: true,
-    twitter: true,
-    soundcloud: true,
-    tiktok: true
-  });
-  
-  // Social media input mode (URL or username)
-  const [socialInputMode, setSocialInputMode] = useState("username");
-  
-  // Calculate age and zodiac sign based on selected date
-  const [age, setAge] = useState<number | null>(null);
-  const [zodiacSign, setZodiacSign] = useState<string | null>(null);
-  
-  // Month options for manual date entry
+  const { toast } = useToast();
+
+  // Define months array for manual date selection
   const months = [
     { value: "0", label: "January" },
     { value: "1", label: "February" },
@@ -75,145 +40,245 @@ const CreateProfile = () => {
     { value: "10", label: "November" },
     { value: "11", label: "December" },
   ];
-  
-  const [selectedMonth, setSelectedMonth] = useState<string | null>(null);
-  const [selectedDay, setSelectedDay] = useState<string | null>(null);
-  const [selectedYear, setSelectedYear] = useState<string | null>(null);
 
-  // Check for existing profile on component mount
+  // Existing form states (ensure these match yours)
+  const [currentStep, setCurrentStep] = useState(1);
+  const [username, setUsername] = useState('');
+  const [fullName, setFullName] = useState('');
+  const [bio, setBio] = useState('');
+  const [date, setDate] = useState<Date | undefined>(undefined);
+  const [age, setAge] = useState<number | null>(null);
+  const [zodiacSign, setZodiacSign] = useState<string | null>(null);
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imageUrl, setImageUrl] = useState<string | null>(null); // For displaying existing or uploaded image
+  const [isUploading, setIsUploading] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [interests, setInterests] = useState<string[]>([]);
+  const [favoriteDecade, setFavoriteDecade] = useState<string>('');
+  const [location, setLocation] = useState(''); // Added location state
+  const [preferredListeningTime, setPreferredListeningTime] = useState<string>('');
+  const [showConstellationModal, setShowConstellationModal] = useState(false);
+  const [selectedConstellation, setSelectedConstellation] = useState<string | null>(null);
+  const [socialLinks, setSocialLinks] = useState({
+    instagram: '',
+    spotify: '',
+    twitter: '',
+    facebook: '',
+    linkedin: '',
+    github: '',
+    website: '',
+  });
+  const [validSocialLinks, setValidSocialLinks] = useState<Record<keyof typeof socialLinks, boolean>>({
+    instagram: false,
+    spotify: false,
+    twitter: false,
+    facebook: false,
+    linkedin: false,
+    github: false,
+    website: false,
+  });
+  const [socialInputMode, setSocialInputMode] = useState<'username' | 'url'>('username'); // Or 'url' as default
+  const [selectedMonth, setSelectedMonth] = useState<string>('');
+  const [selectedYear, setSelectedYear] = useState<string>(''); // Added state for selected year
+  const [selectedDay, setSelectedDay] = useState<string>(""); // Added selectedDay state
+  const [profileDataAppliedToFormForUserId, setProfileDataAppliedToFormForUserId] = useState<string | null>(null);
+
+  // New states to manage profile loading for the form
+  const [isLoadingProfileForForm, setIsLoadingProfileForForm] = useState(false);
+
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const { setTheme } = useTheme();
+
+  const combinedLoading = authLoading || completionCheckLoading || isLoadingProfileForForm;
+
+  // Effect to load existing profile data into the form
   useEffect(() => {
-    if (!user) return; // Only proceed if user is logged in
-    
-    // Get URL params to prevent redirect loops
-    const searchParams = new URLSearchParams(window.location.search);
-    const preventRedirectLoop = searchParams.get('noRedirect') === 'true';
-    const source = searchParams.get('source') || '';
-    
-    // If we're coming from a specific source with the noRedirect flag, don't check profile
-    if (preventRedirectLoop) {
-      console.log(`CreateProfile: Redirect prevention active (source: ${source}), skipping profile check`);
-      return;
-    }
+    const loadAndPrefillForm = async () => {
+      if (!user) { // User logged out or not yet available
+        setProfileDataAppliedToFormForUserId(null); // Reset tracker
+        // Reset form fields to empty/default state
+        setUsername('');
+        setFullName('');
+        setBio('');
+        setImageUrl(null);
+        setDate(undefined);
+        setInterests([]);
+        setFavoriteDecade('');
+        setPreferredListeningTime('');
+        setSelectedConstellation(null);
+        // Reset other form states as needed
+        setIsLoadingProfileForForm(false); // Ensure loading is off
+        return;
+      }
 
-    setIsLoading(true);
-    
-    const checkExistingProfile = async () => {
+      // If profile data for THIS user.id has already been applied, or if we're already loading it, do nothing.
+      if (profileDataAppliedToFormForUserId === user.id || isLoadingProfileForForm) {
+        return;
+      }
+
+      setIsLoadingProfileForForm(true);
+
       try {
-        console.log("CreateProfile: Checking existing profile for user:", user?.id);
-        
-        // Check if AuthContext already knows the user has a complete profile
-        if (hasProfile) {
-          console.log("CreateProfile: User already has a complete profile according to AuthContext");
-          toast({
-            title: "Profile Already Complete",
-            description: "You already have a complete profile. Redirecting to match page.",
-          });
-          setTimeout(() => navigate('/match'), 1500);
-          return;
-        }
-        
-        // If no cached result, get fresh data (reduces Supabase requests)
-        const profile = await getUserProfile(user.id);
-        
-        // Check music preferences only if we have a valid profile
-        let hasMusicPreferences = false;
-        if (profile && profile.full_name && profile.birth_date) {
-          try {
-            const { getProfile } = await import('@/services/profile');
-            const musicPrefs = await getProfile(user.id);
-            hasMusicPreferences = !!musicPrefs;
-          } catch (err) {
-            console.error("CreateProfile: Error checking music preferences:", err);
-            // Continue with profile check even if music prefs check fails
-          }
-        }
-        
-        // Check profile completeness
-        if (profile && profile.full_name && profile.birth_date) {
-          if (hasMusicPreferences) {
-            // Complete profile with music preferences exists, redirect to match
-            toast({
-              title: "Profile Already Exists",
-              description: "You have a complete profile. Redirecting to match page.",
-            });
-            
-            // Add a slight delay before redirecting to ensure toast is visible
-            setTimeout(() => {
-              navigate('/match');
-            }, 1500);
-            return;
+        if (hasProfile) { // AuthContext indicates a core profile exists. Attempt to fetch and prefill.
+          console.log(`CreateProfile: User ${user.id} has core profile. Fetching details.`);
+          const existingProfile = await getUserProfile(user.id); // THE API CALL
+
+          if (existingProfile) {
+            console.log(`CreateProfile: Prefilling form for ${user.id} with existing profile data.`);
+            setUsername(existingProfile.username || (user.email ? user.email.split('@')[0] : ''));
+            setFullName(existingProfile.full_name || ''); // Assuming UserProfileData has full_name
+            setBio(existingProfile.bio || '');
+            setImageUrl(existingProfile.avatar_url || null);
+            if (existingProfile.birth_date) {
+              try {
+                const parsedDate = parseISO(existingProfile.birth_date);
+                if (!isNaN(parsedDate.getTime())) {
+                  setDate(parsedDate);
+                } else {
+                  console.warn("CreateProfile: Failed to parse birth_date from profile:", existingProfile.birth_date);
+                  setDate(undefined);
+                }
+              } catch (e) {
+                console.error("CreateProfile: Error parsing birth_date:", e);
+                setDate(undefined);
+              }
+            }
+            // Assuming UserProfileData might have these fields from your state list
+            setInterests((existingProfile as any).interests || []); 
+            setFavoriteDecade((existingProfile as any).favorite_decade || '');
+            setPreferredListeningTime((existingProfile as any).preferred_listening_time || '');
+            setSelectedConstellation((existingProfile as any).constellation || null);
+            // Set other form fields from 'existingProfile' as needed
+
+            setProfileDataAppliedToFormForUserId(user.id); // Mark that data for this user.id has been applied.
           } else {
-            // Profile exists but no music preferences, redirect to music preferences
-            toast({
-              title: "Profile Exists",
-              description: "Please complete your music preferences.",
-            });
-            
-            // Add source and noRedirect params to prevent loops
-            navigate('/music-preferences?source=create-profile&noRedirect=true');
-            return;
+            console.warn(`CreateProfile: Core profile indicated for ${user.id}, but no profile data found. Setting defaults.`);
+            setUsername(user.email ? user.email.split('@')[0] : '');
+            setFullName(''); setBio(''); setImageUrl(null); setDate(undefined);
+            setInterests([]); setFavoriteDecade(''); setPreferredListeningTime(''); setSelectedConstellation(null);
           }
-        } else if (profile) {
-          // Profile exists but is incomplete, populate the form with existing data
-          setFullName(profile.full_name || '');
-          setUsername(profile.username || '');
-          setBio(profile.bio || '');
-          
-          // Set birth date if available
-          if (profile.birth_date) {
-            const birthDate = new Date(profile.birth_date);
-            setDate(birthDate);
-            
-            // Set manual date selections too
-            setSelectedYear(birthDate.getFullYear().toString());
-            setSelectedMonth(birthDate.getMonth().toString());
-            setSelectedDay(birthDate.getDate().toString());
-          }
-          
-          // Set profile image if available
-          if (profile.avatar_url) {
-            setProfileImageUrl(profile.avatar_url);
-            setImagePreview(profile.avatar_url);
-          }
-          
-          // Handle social media links if available
-          if (profile.social_links) {
-            const links = profile.social_links as Record<string, string>;
-            setSocialMediaLinks({
-              instagram: links.instagram || '',
-              spotify: links.spotify || '',
-              twitter: links.twitter || '',
-              soundcloud: links.soundcloud || '',
-              tiktok: links.tiktok || ''
-            });
-          }
-          
-          toast({
-            title: "Incomplete Profile Found",
-            description: "We've loaded your existing information. Please fill in the remaining details.",
-          });
-        } else {
-          // No profile found, set default username from email
-          if (user?.email) {
-            const defaultUsername = user.email.split('@')[0];
-            setUsername(defaultUsername);
-          }
+        } else { // AuthContext indicates no core profile. Set defaults for new profile creation.
+          console.log(`CreateProfile: No core profile for ${user.id}. Setting defaults for new profile.`);
+          setUsername(user.email ? user.email.split('@')[0] : '');
+          setFullName(''); setBio(''); setImageUrl(null); setDate(undefined);
+          setInterests([]); setFavoriteDecade(''); setPreferredListeningTime(''); setSelectedConstellation(null);
         }
       } catch (error) {
-        console.error("Error checking for existing profile:", error);
+        console.error("CreateProfile: Error in loadAndPrefillForm:", error);
         toast({
-          title: "Error",
-          description: "There was a problem checking your profile. Please try again.",
+          title: "Error Loading Profile",
+          description: "There was an issue loading your profile data. You may need to enter details manually or refresh.",
           variant: "destructive",
         });
       } finally {
-        setIsLoading(false);
+        setIsLoadingProfileForForm(false);
       }
     };
-    
-    checkExistingProfile();
-  }, [user, navigate, toast]);
-  
+
+    loadAndPrefillForm();
+  }, [user, hasProfile, toast, navigate]);
+
+  // Update age and zodiac sign when date changes
+
+  const handleSaveAndContinue = async () => {
+    if (!user) {
+      toast({
+        title: "Error",
+        description: "You must be logged in to save your profile.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // --- Basic Client-Side Validation (Expand as needed) ---
+    if (!fullName.trim()) {
+      toast({ title: "Full Name Required", description: "Please enter your full name.", variant: "destructive" });
+      return;
+    }
+    if (!username.trim()) {
+      toast({ title: "Username Required", description: "Please enter a username.", variant: "destructive" });
+      return;
+    }
+    if (!date) {
+      toast({ title: "Birth Date Required", description: "Please select your birth date.", variant: "destructive" });
+      return;
+    }
+    if (age !== null && age < 18) {
+      toast({ title: "Age Restriction", description: "You must be at least 18 years old to use Findinglyra.", variant: "destructive" });
+      return;
+    }
+    if (!location.trim()) {
+      toast({ title: "Location Required", description: "Please enter your location.", variant: "destructive" });
+      return;
+    }
+    if (!bio.trim()) {
+      toast({ title: "Bio Required", description: "Please tell us a bit about yourself.", variant: "destructive" });
+      return;
+    }
+    // Add more validation for other required fields if necessary
+
+    setIsSubmitting(true);
+
+    try {
+      const profileData: Partial<Profile> = {
+        id: user.id, // Ensure id is included for updates
+        username: username.trim(),
+        full_name: fullName.trim(),
+        bio: bio.trim(),
+        birth_date: date ? format(date, "yyyy-MM-dd") : null, // Format date for Supabase
+        avatar_url: imageUrl, // This should be the URL from Supabase Storage after upload
+        // location: location.trim(), // Temporarily removed to align with profiles table schema and fix type error
+        zodiac_sign: selectedConstellation, // Map to zodiac_sign column
+        // location: location.trim(), // Temporarily removed, pending schema/service function review
+        // interests: interests, // Temporarily removed, pending schema/service function review
+        // favorite_decade: favoriteDecade, // Temporarily removed, pending schema/service function review
+        // preferred_listening_time: preferredListeningTime, // Temporarily removed, pending schema/service function review
+        // If your 'profiles' table has an 'is_profile_complete' boolean flag, you might set it here:
+        // is_profile_complete: true,
+      };
+
+      let success = false;
+      if (hasProfile) {
+        console.log(`CreateProfile: Updating existing profile for user ${user.id}`);
+        await updateUserProfile(profileData, user.id); 
+        success = true;
+      } else {
+        console.log(`CreateProfile: Creating new profile for user ${user.id}`);
+        await createUserProfile(profileData); 
+        success = true;
+      }
+
+      if (success) {
+        // If social links are managed separately and have been modified, save them
+        // This depends on your exact logic for social links.
+        // Example: if (Object.values(socialLinks).some(link => link.trim() !== '')) {
+        //   await updateSocialMediaLinks(user.id, socialLinks);
+        // }
+
+        await invalidateProfileCache(user.id); // Crucial: Invalidate cache so AuthContext re-fetches completion status
+        
+        toast({
+          title: "Profile Saved!",
+          description: "Your core profile information has been saved.",
+        });
+        
+        // Navigation to /music-preferences will be handled by AuthContext's enforceAuthRouting
+        // once the hasCoreProfile state is updated and detected.
+        console.log("CreateProfile: Profile saved. AuthContext will handle redirection.");
+      }
+
+    } catch (error: any) {
+      console.error("CreateProfile: Error saving profile:", error);
+      toast({
+        title: "Save Failed",
+        description: error.message || "Could not save your profile. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   // Update age and zodiac sign when date changes
   useEffect(() => {
     if (date) {
@@ -246,6 +311,58 @@ const CreateProfile = () => {
       setZodiacSign(null);
     }
   }, [date]);
+
+  // Sync calendar date selection to manual dropdowns
+  useEffect(() => {
+    if (date) {
+      const newDay = String(date.getDate());
+      const newMonth = String(date.getMonth()); // 0-indexed
+      const newYear = String(date.getFullYear());
+
+      if (selectedDay !== newDay) setSelectedDay(newDay);
+      if (selectedMonth !== newMonth) setSelectedMonth(newMonth);
+      if (selectedYear !== newYear) setSelectedYear(newYear);
+    } else {
+      // If date is cleared, clear dropdowns too, unless they are already clear
+      if (selectedDay !== "") setSelectedDay("");
+      if (selectedMonth !== "") setSelectedMonth("");
+      if (selectedYear !== "") setSelectedYear("");
+    }
+  }, [date]); // Removed selectedDay, selectedMonth, selectedYear from deps to avoid loops
+  
+  // Set date from manual selection (called by useEffect below)
+  const updateDateFromSelections = () => {
+    if (selectedYear && selectedMonth && selectedDay) {
+      const year = parseInt(selectedYear);
+      const month = parseInt(selectedMonth); // This is 0-indexed as per state
+      const day = parseInt(selectedDay);
+      
+      // Validate date parts
+      if (isNaN(year) || isNaN(month) || isNaN(day) || month < 0 || month > 11 || day < 1 || day > 31) {
+        // Optionally, provide feedback for invalid partial input, or just don't update
+        return;
+      }
+
+      const newDate = new Date(year, month, day);
+      
+      // Further validation: ensure the date created is valid (e.g., not Feb 30)
+      // and also that the month and day correspond to what was set (Date object can auto-correct)
+      if (!isNaN(newDate.getTime()) && 
+          newDate.getFullYear() === year && 
+          newDate.getMonth() === month && 
+          newDate.getDate() === day) {
+        // Only update if the newDate is different from the current date state
+        if (!date || newDate.getTime() !== date.getTime()) {
+          setDate(newDate);
+        }
+      }
+    }
+  };
+
+  // Sync manual dropdown selections to calendar date
+  useEffect(() => {
+    updateDateFromSelections();
+  }, [selectedDay, selectedMonth, selectedYear]);
   
   // Handle file selection for profile image
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -272,12 +389,12 @@ const CreateProfile = () => {
         return;
       }
       
-      setProfileImageFile(file);
+      setImageFile(file);
       
       // Create a preview URL
       const reader = new FileReader();
       reader.onload = (e) => {
-        setImagePreview(e.target?.result as string);
+        setImageUrl(e.target?.result as string);
       };
       reader.readAsDataURL(file);
     }
@@ -285,9 +402,8 @@ const CreateProfile = () => {
   
   // Handle removing the selected image
   const handleRemoveImage = () => {
-    setProfileImageFile(null);
-    setImagePreview(null);
-    setProfileImageUrl("");
+    setImageFile(null);
+    setImageUrl(null);
     if (fileInputRef.current) {
       fileInputRef.current.value = "";
     }
@@ -335,16 +451,47 @@ const CreateProfile = () => {
         } else {
           return /^https?:\/\/(www\.)?tiktok\.com\/@[\w\.]+\/?$/.test(value);
         }
+      },
+      facebook: (value: string) => {
+        if (!value) return true;
+        if (socialInputMode === "username") {
+          return /^@?[\w\.]+$/.test(value) && !value.includes("http"); // Basic username check
+        } else {
+          return /^https?:\/\/(www\.)?facebook\.com\/[\w\.]+\/?$/.test(value);
+        }
+      },
+      linkedin: (value: string) => {
+        if (!value) return true;
+        if (socialInputMode === "username") {
+          // LinkedIn usernames can be more complex, often not directly used in URLs like other platforms
+          // For simplicity, we'll allow a general username format or a URL part
+          return /^@?[\w\.\-]+$/.test(value) && !value.includes("http"); 
+        } else {
+          return /^https?:\/\/(www\.)?linkedin\.com\/(in\/[\w\.\-]+|company\/[\w\.\-]+)\/?$/.test(value);
+        }
+      },
+      github: (value: string) => {
+        if (!value) return true;
+        if (socialInputMode === "username") {
+          return /^@?[a-zA-Z0-9]+(?:-[a-zA-Z0-9]+)*$/.test(value) && !value.includes("http"); // GitHub username regex
+        } else {
+          return /^https?:\/\/(www\.)?github\.com\/[a-zA-Z0-9]+(?:-[a-zA-Z0-9]+)*\/?$/.test(value);
+        }
+      },
+      website: (value: string) => {
+        if (!value) return true; // Empty is considered valid (optional field)
+        // Basic URL validation: checks for http:// or https:// followed by non-space characters.
+        return /^https?:\/\/[^\s/$.?#].[^\s]*$/i.test(value);
       }
     };
 
     // Validate each link
-    const newValidState = Object.entries(socialMediaLinks).reduce((acc, [key, value]) => {
-      const platform = key as keyof typeof socialMediaLinks;
+    const newValidState = Object.entries(socialLinks).reduce((acc, [key, value]) => {
+      const platform = key as keyof typeof socialLinks;
       const validator = validators[platform];
       acc[platform] = validator(value);
       return acc;
-    }, {} as Record<keyof typeof socialMediaLinks, boolean>);
+    }, {} as Record<keyof typeof socialLinks, boolean>);
 
     setValidSocialLinks(newValidState);
     return Object.values(newValidState).every(Boolean);
@@ -354,7 +501,7 @@ const CreateProfile = () => {
   const formatSocialLinks = () => {
     const formatted: Record<string, string> = {};
     
-    Object.entries(socialMediaLinks).forEach(([platform, value]) => {
+    Object.entries(socialLinks).forEach(([platform, value]) => {
       if (!value) return;
       
       // Skip invalid links
@@ -420,21 +567,6 @@ const CreateProfile = () => {
       throw error;
     } finally {
       setIsUploading(false);
-    }
-  };
-  
-  // Set date from manual selection
-  const updateDateFromSelections = () => {
-    if (selectedYear && selectedMonth && selectedDay) {
-      const year = parseInt(selectedYear);
-      const month = parseInt(selectedMonth);
-      const day = parseInt(selectedDay);
-      
-      // Validate date
-      const newDate = new Date(year, month, day);
-      if (!isNaN(newDate.getTime())) {
-        setDate(newDate);
-      }
     }
   };
   
@@ -532,10 +664,10 @@ const CreateProfile = () => {
       const formattedSocialLinks = formatSocialLinks();
       
       // Handle profile image upload if a file was selected
-      let imageUrl = profileImageUrl; // Start with URL if provided
-      if (profileImageFile) {
+      let finalImageUrl = imageUrl; // Use the state variable 'imageUrl' as initial value
+      if (imageFile) {
         try {
-          imageUrl = await uploadProfileImage(profileImageFile);
+          finalImageUrl = await uploadProfileImage(imageFile); // Update local variable
         } catch (error) {
           console.error("Error uploading profile image:", error);
           toast({
@@ -579,7 +711,8 @@ const CreateProfile = () => {
         full_name: sanitizedFullName,
         bio: bioWithSocialLinks, // Include social links in bio for now
         username: sanitizedUsername,
-        avatar_url: imageUrl || null,
+        avatar_url: finalImageUrl || null, // Use the corrected local variable
+        // Remove age property as it's derived from birth_date
         // Remove social_links field until migration is run
       }, user.id);
       
@@ -590,7 +723,8 @@ const CreateProfile = () => {
           full_name: sanitizedFullName,
           bio: bioWithSocialLinks, // Include social links in bio for now
           username: sanitizedUsername,
-          avatar_url: imageUrl || null,
+          avatar_url: finalImageUrl || null, // Use the corrected local variable
+          // Remove age property as it's derived from birth_date
           // Remove social_links field until migration is run
         }, user.id);
       }
@@ -640,14 +774,14 @@ const CreateProfile = () => {
 
   return (
     <div className="max-w-4xl mx-auto p-6 space-y-8 animate-fadeIn">
-      {isLoading || isSubmitting ? (
+      {(combinedLoading || isSubmitting) ? (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
           <Loader className="h-12 w-12 animate-spin text-white" />
         </div>
       ) : (
         <></>
       )}
-      {isLoading ? (
+      {combinedLoading ? (
         <div className="flex flex-col items-center justify-center py-12">
           <div className="h-12 w-12 rounded-full border-4 border-primary border-t-transparent animate-spin mb-4"></div>
           <h3 className="text-xl font-medium">Checking profile status...</h3>
@@ -736,83 +870,23 @@ const CreateProfile = () => {
                     </Button>
                   </PopoverTrigger>
                   <PopoverContent className="w-auto p-4 z-50" align="start">
-                    {/* Year selection first for better usability */}
-                    <div className="mb-3 space-y-1.5">
-                      <Label>Birth Year</Label>
-                      <Select 
-                        value={selectedYear || new Date().getFullYear() - 25 + ''}
-                        onValueChange={(value) => {
-                          setSelectedYear(value);
-                          
-                          // Create a date object using the selected year but keep other parts
-                          if (date) {
-                            const newDate = new Date(date);
-                            newDate.setFullYear(parseInt(value));
-                            if (isValid(newDate)) {
-                              setDate(newDate);
-                            }
-                          } else {
-                            // Default to January 1st of selected year if no date set
-                            const newDate = new Date(parseInt(value), 0, 1);
-                            setDate(newDate);
-                          }
-                        }}
-                      >
-                        <SelectTrigger className="w-full">
-                          <SelectValue placeholder="Select Year" />
-                        </SelectTrigger>
-                        <SelectContent className="max-h-[var(--radix-select-content-available-height)] overflow-y-auto">
-                          <div className="flex justify-between px-2 py-1.5 text-sm font-medium">
-                            <span>Common Birth Years</span>
-                          </div>
-                          {/* Show most common birth years for users (21-40 years old) */}
-                          {Array.from(
-                            { length: 20 }, 
-                            (_, i) => new Date().getFullYear() - 21 - i
-                          ).map((year) => (
-                            <SelectItem key={year} value={year.toString()}>
-                              {year} ({new Date().getFullYear() - year} years old)
-                            </SelectItem>
-                          ))}
-                          
-                          <div className="flex justify-between px-2 py-1.5 text-sm font-medium border-t">
-                            <span>Other Years</span>
-                          </div>
-                          {/* Show older years in groups for better navigation */}
-                          {Array.from(
-                            { length: 8 }, 
-                            (_, i) => {
-                              const startYear = Math.floor((new Date().getFullYear() - 18) / 10) * 10 - i * 10;
-                              return (
-                                <div key={startYear} className="px-2 py-1.5">
-                                  <div className="text-xs text-muted-foreground mb-1">{startYear} - {startYear - 4}</div>
-                                  {Array.from({ length: 5 }, (_, j) => startYear - j).map(year => (
-                                    <SelectItem key={year} value={year.toString()} className="py-1">
-                                      {year} ({new Date().getFullYear() - year} years old)
-                                    </SelectItem>
-                                  ))}
-                                </div>
-                              );
-                            }
-                          )}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    
                     <Calendar
                       mode="single"
                       selected={date}
                       onSelect={setDate}
-                      defaultMonth={date || new Date(parseInt(selectedYear || (new Date().getFullYear() - 25).toString()), 0)}
-                      disabled={(date) => {
-                        // Must be at least 18 years old and not in the future
+                      captionLayout="dropdown-buttons"
+                      fromYear={new Date().getFullYear() - 100} // Allow selection up to 100 years ago
+                      toYear={new Date().getFullYear() - 18}   // Allow selection up to 18 years ago
+                      defaultMonth={date || new Date(new Date().getFullYear() - 25, 0)} // Default to 25 years ago, Jan
+                      disabled={(d) => { // Renamed 'date' parameter to 'd' to avoid conflict
+                        // Must be at least 18 years old and not more than 100 years old.
                         const now = new Date();
-                        const minDate = new Date(now.getFullYear() - 100, now.getMonth(), now.getDate());
-                        const maxDate = new Date(now.getFullYear() - 18, now.getMonth(), now.getDate());
-                        return date > maxDate || date < minDate;
+                        const minBirthDate = new Date(now.getFullYear() - 100, now.getMonth(), now.getDate());
+                        const maxBirthDate = new Date(now.getFullYear() - 18, now.getMonth(), now.getDate());
+                        return d > maxBirthDate || d < minBirthDate;
                       }}
                       initialFocus
-                      className="border rounded-md bg-white shadow-md"
+                      className="border rounded-md bg-white shadow-md p-2" // Added padding for aesthetics
                     />
                   </PopoverContent>
                 </Popover>
@@ -845,7 +919,7 @@ const CreateProfile = () => {
                       <SelectTrigger id="year-select" className="w-full">
                         <SelectValue placeholder="Year" />
                       </SelectTrigger>
-                      <SelectContent className="max-h-[var(--radix-select-content-available-height)] overflow-y-auto">
+                      <SelectContent className="z-50 bg-background max-h-[200px] overflow-y-auto">
                         {/* Group years by decades for easy navigation */}
                         {Array.from({ length: 9 }, (_, i) => {
                           const decadeStart = Math.floor((new Date().getFullYear() - 18) / 10) * 10 - i * 10;
@@ -887,7 +961,7 @@ const CreateProfile = () => {
                       <SelectTrigger id="month-select" className="w-full">
                         <SelectValue placeholder="Month" />
                       </SelectTrigger>
-                      <SelectContent>
+                      <SelectContent className="z-50 bg-background max-h-[200px] overflow-y-auto">
                         {months.map((month) => (
                           <SelectItem key={month.value} value={month.value}>
                             {month.label}
@@ -921,7 +995,7 @@ const CreateProfile = () => {
                       <SelectTrigger id="day-select" className="w-full">
                         <SelectValue placeholder="Day" />
                       </SelectTrigger>
-                      <SelectContent>
+                      <SelectContent className="z-50 bg-background max-h-[200px] overflow-y-auto">
                         {Array.from({ length: getDaysInMonth() }, (_, i) => i + 1).map((day) => (
                           <SelectItem key={day} value={day.toString()}>
                             {day}
@@ -959,10 +1033,10 @@ const CreateProfile = () => {
             
             <div className="flex flex-col items-center space-y-4">
               {/* Image preview */}
-              {imagePreview ? (
+              {imageUrl ? (
                 <div className="relative h-40 w-40 rounded-full overflow-hidden border border-border">
                   <img 
-                    src={imagePreview} 
+                    src={imageUrl} 
                     alt="Profile preview" 
                     className="h-full w-full object-cover" 
                   />
@@ -1019,13 +1093,12 @@ const CreateProfile = () => {
                 <Input
                   id="profileImageUrl"
                   placeholder="Enter image URL instead"
-                  value={profileImageUrl}
+                  value={imageUrl || ''}
                   onChange={(e) => {
-                    setProfileImageUrl(e.target.value);
-                    setProfileImageFile(null);
-                    setImagePreview(null);
+                    setImageUrl(e.target.value);
+                    setImageFile(null); // Clear file if URL is typed
                   }}
-                  disabled={!!imagePreview}
+                  disabled={!!imageFile} // Disable if a file is selected
                   className="w-full"
                 />
               </div>
@@ -1039,24 +1112,56 @@ const CreateProfile = () => {
                 <span className="w-20 text-sm">Instagram:</span>
                 <Input
                   placeholder="@username"
-                  value={socialMediaLinks.instagram}
-                  onChange={(e) => setSocialMediaLinks(prev => ({ ...prev, instagram: e.target.value }))}
+                  value={socialLinks.instagram}
+                  onChange={(e) => setSocialLinks(prev => ({ ...prev, instagram: e.target.value }))}
                 />
               </div>
               <div className="flex items-center space-x-2">
                 <span className="w-20 text-sm">Spotify:</span>
                 <Input
                   placeholder="Username or profile URL"
-                  value={socialMediaLinks.spotify}
-                  onChange={(e) => setSocialMediaLinks(prev => ({ ...prev, spotify: e.target.value }))}
+                  value={socialLinks.spotify}
+                  onChange={(e) => setSocialLinks(prev => ({ ...prev, spotify: e.target.value }))}
                 />
               </div>
               <div className="flex items-center space-x-2">
                 <span className="w-20 text-sm">Twitter:</span>
                 <Input
                   placeholder="@username"
-                  value={socialMediaLinks.twitter}
-                  onChange={(e) => setSocialMediaLinks(prev => ({ ...prev, twitter: e.target.value }))}
+                  value={socialLinks.twitter}
+                  onChange={(e) => setSocialLinks(prev => ({ ...prev, twitter: e.target.value }))}
+                />
+              </div>
+              <div className="flex items-center space-x-2">
+                <span className="w-20 text-sm">Facebook:</span>
+                <Input
+                  placeholder="Profile URL or username"
+                  value={socialLinks.facebook}
+                  onChange={(e) => setSocialLinks(prev => ({ ...prev, facebook: e.target.value }))}
+                />
+              </div>
+              <div className="flex items-center space-x-2">
+                <span className="w-20 text-sm">LinkedIn:</span>
+                <Input
+                  placeholder="Profile URL"
+                  value={socialLinks.linkedin}
+                  onChange={(e) => setSocialLinks(prev => ({ ...prev, linkedin: e.target.value }))}
+                />
+              </div>
+              <div className="flex items-center space-x-2">
+                <span className="w-20 text-sm">GitHub:</span>
+                <Input
+                  placeholder="@username"
+                  value={socialLinks.github}
+                  onChange={(e) => setSocialLinks(prev => ({ ...prev, github: e.target.value }))}
+                />
+              </div>
+              <div className="flex items-center space-x-2">
+                <span className="w-20 text-sm">Website:</span>
+                <Input
+                  placeholder="https://example.com"
+                  value={socialLinks.website}
+                  onChange={(e) => setSocialLinks(prev => ({ ...prev, website: e.target.value }))}
                 />
               </div>
             </div>
@@ -1091,8 +1196,8 @@ const CreateProfile = () => {
           >
             Back
           </Button>
-          <Button type="submit" disabled={isLoading || isSubmitting}>
-            {isLoading || isSubmitting ? "Saving..." : "Continue to Music Preferences"}
+          <Button type="submit" disabled={combinedLoading || isSubmitting}>
+            {combinedLoading || isSubmitting ? "Saving..." : "Continue to Music Preferences"}
           </Button>
         </div>
       </form>

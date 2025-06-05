@@ -73,9 +73,9 @@ const checkAuthRateLimit = (operationType: string): boolean => {
   
   // Check if we should skip rate limiting for this request type
   // Will still track the request, but won't block it
-  const skipRateLimiting = localStorage.getItem('lyra_disable_rate_limiting') === 'true';
+  const skipRateLimiting = isDevelopment && localStorage.getItem('lyra_disable_rate_limiting') === 'true';
   if (skipRateLimiting && (operationType === 'auth:signUp' || operationType === 'auth:signIn')) {
-    console.log(`Bypassing rate limiting for ${operationType} as requested`);
+    console.log(`Bypassing rate limiting for ${operationType} as requested (DEV ONLY)`);
     return true;
   }
   

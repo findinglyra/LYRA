@@ -34,14 +34,14 @@ const Chat = () => {
               }`}
             >
               <div
-                className={`max-w-[80%] p-3 rounded-2xl ${
+                className={`max-w-[80%] p-3 rounded-2xl ${ 
                   msg.sender === "me"
-                    ? "bg-primary text-white"
-                    : "glass-morphism"
+                    ? "bg-indigo-600 text-white"
+                    : "glass-morphism text-slate-700"
                 }`}
               >
                 <p className="text-sm">{msg.content}</p>
-                <span className="text-xs opacity-70 mt-1 block">
+                <span className="text-xs text-slate-500 opacity-70 mt-1 block">
                   {msg.time}
                 </span>
               </div>
@@ -63,7 +63,7 @@ const Chat = () => {
               placeholder="Type a message..."
               className="rounded-full"
             />
-            <Button type="submit" size="icon" className="rounded-full">
+            <Button type="submit" size="icon" className="rounded-full bg-indigo-600 hover:bg-indigo-700 text-white">
               <Send className="h-4 w-4" />
             </Button>
           </form>

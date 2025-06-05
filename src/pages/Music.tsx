@@ -1,7 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { PlayCircle, Star, MoonStar, Sparkles } from "lucide-react";
 import { useProfileStore } from "@/utils/profileStorage";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
@@ -9,8 +9,9 @@ import { useAuth } from "@/contexts/AuthContext";
 const Music = () => {
   const profile = useProfileStore((state) => state.profile);
   const navigate = useNavigate();
+  const location = useLocation();
   const { toast } = useToast();
-  const { user, hasProfile, checkAndRedirect } = useAuth();
+  const { user, hasCoreProfile, hasRequiredMusicPreferences, enforceAuthRouting } = useAuth();
 
   useEffect(() => {
     if (!user) {
@@ -23,10 +24,12 @@ const Music = () => {
       return;
     }
     
-    if (!hasProfile) {
-      checkAndRedirect();
+    // Check if both core profile and music preferences are complete
+    if (!(hasCoreProfile && hasRequiredMusicPreferences)) {
+      // If not complete, enforce routing rules which might redirect the user
+      enforceAuthRouting(location.pathname);
     }
-  }, [user, hasProfile, navigate, toast, checkAndRedirect]);
+  }, [user, hasCoreProfile, hasRequiredMusicPreferences, navigate, toast, enforceAuthRouting, location.pathname]);
 
   if (!profile) return null;
 
@@ -45,13 +48,12 @@ const Music = () => {
   }));
 
   return (
-    <div className="subtle-starry-bg min-h-screen container max-w-md mx-auto py-8 px-4 space-y-8">
-      <div className="lyra-constellation top-20 right-10 opacity-30"></div>
+    <div className="min-h-screen container max-w-md mx-auto py-8 px-4 space-y-8">
       
       <section className="space-y-4 relative z-10">
         <div className="flex items-center gap-2">
-          <Star className="h-5 w-5 text-[hsl(var(--primary))]" />
-          <h2 className="text-2xl font-semibold">Stellar Artists</h2>
+          <Star className="h-5 w-5 text-indigo-600" />
+          <h2 className="text-2xl font-semibold text-slate-800">Stellar Artists</h2>
         </div>
         <div className="grid grid-cols-2 gap-4">
           {topArtists.map((artist) => (
@@ -81,8 +83,8 @@ const Music = () => {
 
       <section className="space-y-4 relative z-10">
         <div className="flex items-center gap-2">
-          <MoonStar className="h-5 w-5 text-[hsl(var(--primary))]" />
-          <h2 className="text-2xl font-semibold">Stellar Tracks</h2>
+          <MoonStar className="h-5 w-5 text-indigo-600" />
+          <h2 className="text-2xl font-semibold text-slate-800">Stellar Tracks</h2>
         </div>
         <div className="space-y-3">
           {recentTracks.map((track) => (
@@ -90,16 +92,16 @@ const Music = () => {
               key={track.title}
               className="flex items-center gap-3 p-3 rounded-xl glass-card hover:shadow-[0_0_15px_rgba(100,100,255,0.1)] transition-all"
             >
-              <Button size="icon" variant="ghost" className="shrink-0 text-[hsl(var(--primary))]">
+              <Button size="icon" variant="ghost" className="shrink-0 text-indigo-600">
                 <PlayCircle className="h-6 w-6" />
               </Button>
               <div className="min-w-0 flex-1">
-                <h3 className="font-medium truncate">{track.title}</h3>
+                <h3 className="font-medium truncate text-slate-700">{track.title}</h3>
                 <div className="flex items-center">
                   <p className="text-sm text-muted-foreground truncate">{track.artist}</p>
-                  <span className="mx-1 text-[hsl(var(--primary))]">•</span>
+                  <span className="mx-1 text-slate-500">•</span>
                   <div className="text-xs flex items-center">
-                    <Sparkles className="h-3 w-3 mr-1 text-[hsl(var(--primary))]" />
+                    <Sparkles className="h-3 w-3 mr-1 text-indigo-600" />
                     <span>{track.intensity}</span>
                   </div>
                 </div>
@@ -114,14 +116,14 @@ const Music = () => {
       
       <section className="mt-8 relative z-10">
         <div className="glass-card p-6 rounded-xl space-y-4 shadow-[0_0_15px_rgba(100,100,255,0.05)]">
-          <h3 className="text-lg font-semibold flex items-center">
-            <Star className="h-4 w-4 mr-2 text-[hsl(var(--primary))]" />
+          <h3 className="text-lg font-semibold flex items-center text-slate-800">
+            <Star className="h-4 w-4 mr-2 text-indigo-600" />
             Stellar Harmony
           </h3>
           <div className="space-y-3">
             <div className="space-y-1">
               <p className="text-sm text-muted-foreground">Resonance</p>
-              <div className="bg-[hsla(var(--primary),0.1)] rounded-full h-2.5">
+              <div className="bg-slate-200 rounded-full h-2.5">
                 <div 
                   className="bg-gradient-to-r from-[hsl(var(--primary))] to-[hsl(var(--accent))] h-2.5 rounded-full" 
                   style={{ width: `${profile.energyLevel}%` }}
@@ -130,7 +132,7 @@ const Music = () => {
             </div>
             <div className="space-y-1">
               <p className="text-sm text-muted-foreground">Astral Flow</p>
-              <div className="bg-[hsla(var(--primary),0.1)] rounded-full h-2.5">
+              <div className="bg-slate-200 rounded-full h-2.5">
                 <div 
                   className="bg-gradient-to-r from-[hsl(var(--primary))] to-[hsl(var(--accent))] h-2.5 rounded-full" 
                   style={{ width: `${profile.tempoPreference}%` }}
@@ -139,7 +141,7 @@ const Music = () => {
             </div>
             <div className="space-y-1">
               <p className="text-sm text-muted-foreground">Stellar Dance</p>
-              <div className="bg-[hsla(var(--primary),0.1)] rounded-full h-2.5">
+              <div className="bg-slate-200 rounded-full h-2.5">
                 <div 
                   className="bg-gradient-to-r from-[hsl(var(--primary))] to-[hsl(var(--accent))] h-2.5 rounded-full" 
                   style={{ width: `${profile.danceability}%` }}

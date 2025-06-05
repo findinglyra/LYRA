@@ -1,686 +1,268 @@
-import { useState, useEffect } from "react";
-import { Button } from "@/components/ui/button";
-import { 
-  Star, 
-  Music, 
-  BarChart3, 
-  Mail,
-  Sparkles,
-  User,
-  Menu,
-  Shield,
-  Heart,
-  ScrollText,
-  Clock,
-  Download,
-  Instagram,
-  Twitter,
-  Facebook,
-  Youtube,
-  Copyright,
-  ChevronRight,
-  Linkedin
-} from "lucide-react";
-import { useNavigate } from "react-router-dom";
-import { supabase } from "@/lib/supabase";
-import { useToast } from "@/hooks/use-toast";
-import { forceSignOut } from "@/utils/authUtils";
+import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom'; // Assuming you use React Router for navigation
+import { motion, AnimatePresence } from 'framer-motion';
+import { ChevronRight, Download, Copyright, Clock, Instagram, Twitter, Facebook, Linkedin, Youtube, Rss } from 'lucide-react'; // Added more icons
+import { toast } from '@/components/ui/use-toast'; // Assuming this is your toast component path
 
-const Index = () => {
-  const navigate = useNavigate();
-  const { toast } = useToast();
-  const [user, setUser] = useState<any>(null);
-  const [isHovered, setIsHovered] = useState(false);
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+// Placeholder for a logo component or SVG
+const Logo = () => (
+  <svg height="32" viewBox="0 0 100 32" className="fill-current text-white">
+    <text x="0" y="28" fontSize="30" fontWeight="bold">Lyra</text>
+  </svg>
+);
 
-  // Get and set user information using AuthContext instead of direct Supabase calls
+const backgroundImages = [
+  '/index1.jpg',
+  '/index6.jpeg',
+  '/index9.jpeg',
+  '/index11.jpeg',
+  '/index13.jpeg',
+  '/index8-1.jpeg'
+];
+
+interface BackgroundCarouselProps {
+  images: string[];
+}
+
+const BackgroundCarousel: React.FC<BackgroundCarouselProps> = ({ images }) => {
+  const [currentIndex, setCurrentIndex] = useState(0);
+
   useEffect(() => {
-    const checkUser = async () => {
-      try {
-        console.log('Index: Checking user authentication state');
-        const { data, error } = await supabase.auth.getSession();
-        
-        if (error) {
-          console.error('Index: Error getting session:', error);
-          setUser(null);
-          return;
-        }
-        
-        if (data.session) {
-          console.log('Index: User is authenticated');
-          setUser(data.session.user);
-        } else {
-          console.log('Index: No active session found');
-          setUser(null);
-        }
-      } catch (error) {
-        console.error('Index: Exception during auth check:', error);
-        setUser(null);
-      }
-    };
-    
-    // Check immediately on mount
-    checkUser();
-    
-    // Listen for auth changes
-    const { data: authListener } = supabase.auth.onAuthStateChange(
-      (event, session) => {
-        console.log('Index: Auth state changed -', event);
-        
-        if (event === 'SIGNED_IN' && session) {
-          console.log('Index: User signed in');
-          setUser(session.user);
-        } else if (event === 'SIGNED_OUT') {
-          console.log('Index: User signed out');
-          setUser(null);
-        } else if (event === 'USER_UPDATED' && session) {
-          console.log('Index: User updated');
-          setUser(session.user);
-        }
-      }
-    );
-
-    return () => {
-      console.log('Index: Cleaning up auth listener');
-      authListener.subscription.unsubscribe();
-    };
-  }, []);
-
-  // Function to scroll to section
-  const scrollToSection = (sectionId: string) => {
-    const section = document.getElementById(sectionId);
-    if (section) {
-      section.scrollIntoView({ behavior: 'smooth' });
-    }
-  };
+    const interval = setInterval(() => {
+      setCurrentIndex((prevIndex) => (prevIndex + 1) % images.length);
+    }, 7000); // Change image every 7 seconds
+    return () => clearInterval(interval);
+  }, [images.length]);
 
   return (
-    <div className="min-h-screen flex flex-col bg-[#050E1D] text-white font-sans">
-      {/* Professional Announcement Bar with Gradient Background */}
-      <div className="w-full py-2 px-4 text-center text-white text-sm bg-gradient-to-r from-[#1a2a4a] via-[#2a3a6a] to-[#1a2a4a] border-b border-white/10">
-        <div className="container mx-auto flex items-center justify-center">
-          <Sparkles className="h-4 w-4 mr-2 text-[hsl(var(--primary))]" />
-          <span>Launching Summer 2025 — <a href="/interest" className="underline hover:text-[hsl(var(--primary))] transition-colors">Join the waitlist</a> for early access</span>
+    <div className="fixed top-0 left-0 w-full h-full -z-10 overflow-hidden">
+      <AnimatePresence initial={false} custom={currentIndex}>
+        {images.map((image, index) => (
+          index === currentIndex && (
+            <motion.div
+              key={index} // Use index as key for simplicity here, ensure images are stable if reordering
+              className="absolute top-0 left-0 w-full h-full"
+              custom={currentIndex}
+              initial={{ opacity: 0, x: index > ((currentIndex -1 + images.length) % images.length) ? 300 : -300 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: index < ((currentIndex +1) % images.length) ? -300 : 300 }}
+              transition={{ duration: 1, ease: "easeInOut" }}
+            >
+              <img 
+                src={image} 
+                alt={`Background ${index + 1}`}
+                className="w-full h-full object-cover"
+              />
+              {/* Overlay to ensure text readability */}
+              <div className="absolute top-0 left-0 w-full h-full bg-black/60"></div>
+            </motion.div>
+          )
+        ))}
+      </AnimatePresence>
+    </div>
+  );
+};
+
+const Index: React.FC = () => {
+  // State for announcement bar visibility (example)
+  const [showAnnouncement, setShowAnnouncement] = useState(true);
+
+  return (
+    <div className="min-h-screen text-white flex flex-col relative isolate">
+      <BackgroundCarousel images={backgroundImages} />
+      {/* Announcement Bar - Example */} 
+      {showAnnouncement && (
+        <div className="bg-gradient-to-r from-blue-600 to-cyan-500 text-center p-2 text-sm relative">
+          <span>✨ Our new platform is launching soon! Sign up for early access! ✨</span>
+          <button 
+            onClick={() => setShowAnnouncement(false)} 
+            className="absolute top-1/2 right-4 transform -translate-y-1/2 text-xl font-bold"
+            aria-label="Close announcement"
+          >
+            &times;
+          </button>
         </div>
-      </div>
-      
-      {/* Professional Navigation Bar */}
-      <nav className="sticky top-0 z-50 w-full backdrop-blur-md bg-black/30 border-b border-white/10 shadow-lg">
-        <div className="container mx-auto px-4">
-          <div className="flex items-center justify-between h-16">
-            {/* Logo */}
-            <div className="flex-shrink-0">
-              <a href="/" className="flex items-center">
-                <h1 className="text-2xl font-bold text-white lyra-logo">Lyra</h1>
+      )}
+
+      {/* Header Navigation - Example Structure */}
+      <header className="sticky top-0 z-50 bg-slate-900/10 backdrop-blur-md">
+        <div className="container mx-auto px-4 h-20 flex items-center justify-between">
+          <Link to="/" className="flex items-center space-x-2">
+            <Logo />
+          </Link>
+          <nav className="hidden md:flex items-center space-x-6">
+            <Link to="/features" className="hover:text-blue-400 transition-colors">Features</Link>
+            <Link to="/about" className="hover:text-blue-400 transition-colors">About</Link>
+            <Link to="/blog" className="hover:text-blue-400 transition-colors">Blog</Link>
+            <Link to="/contact" className="hover:text-blue-400 transition-colors">Contact</Link>
+          </nav>
+          <div className="flex items-center space-x-4">
+            <Link to="/login" className="px-4 py-2 border border-blue-500 rounded-md hover:bg-blue-500 transition-colors text-sm">
+              Login
+            </Link>
+            <Link to="/signup" className="px-4 py-2 bg-blue-600 rounded-md hover:bg-blue-700 transition-colors text-sm">
+              Sign Up
+            </Link>
+          </div>
+          {/* Mobile Menu Button - Placeholder */}
+          <div className="md:hidden">
+            <button aria-label="Open menu">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="stroke-current">
+                <path d="M4 6H20M4 12H20M4 18H20" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+            </button>
+          </div>
+        </div>
+      </header>
+
+      {/* Main Content Area - This is where content from Homepage.tsx could be integrated */}
+      <main className="flex-grow container mx-auto px-4 py-12 flex flex-col items-center justify-center text-center">
+        <motion.h1 
+          className="text-5xl md:text-7xl font-bold mb-6 bg-clip-text text-transparent bg-gradient-to-r from-pink-500 via-red-500 to-yellow-500"
+          initial={{ opacity: 0, y: -50 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.8, delay: 0.2 }}
+        >
+          Finding Lyra
+        </motion.h1>
+        <motion.p 
+          className="text-xl md:text-2xl text-slate-300 mb-10 max-w-2xl"
+          initial={{ opacity: 0, y: 50 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.8, delay: 0.4 }}
+        >
+          Connect your universe. Discover meaningful connections through the power of music.
+        </motion.p>
+        
+        <div className="mb-12 w-full max-w-2xl">
+          <CountdownTimer />
+        </div>
+
+        <motion.div 
+          initial={{ opacity: 0, scale: 0.8 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.5, delay: 0.6 }}
+          className="mb-16" // Added margin bottom to separate from gallery
+        >
+          <Link 
+            to="/interest"
+            className="px-8 py-4 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-lg text-xl font-semibold hover:from-blue-600 hover:to-cyan-600 transition-all transform hover:scale-105 shadow-lg"
+          >
+            Join the Waitlist <ChevronRight className="inline-block ml-2" />
+          </Link>
+        </motion.div>
+
+      </main>
+
+      {/* Footer */}
+      <footer className="bg-slate-900/70 border-t border-slate-700 py-12">
+        <div className="container mx-auto px-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 text-slate-400">
+          {/* About Lyra */}
+          <div>
+            <h3 className="text-lg font-semibold text-white mb-4">Lyra</h3>
+            <p className="text-sm mb-4">
+              Finding Lyra is a new way to connect with people who share your musical soul. Discover, match, and vibe.
+            </p>
+            <div className="flex space-x-4">
+              <a href="https://www.tiktok.com/@findinglyra" className="hover:text-white transition-colors" aria-label="TikTok">
+                <Rss size={20} /> {/* Placeholder for TikTok icon if not available */}
+              </a>
+              <a href="https://www.instagram.com/findlyra/" className="hover:text-white transition-colors" aria-label="Instagram">
+                <Instagram size={20} />
+              </a>
+              <a href="https://twitter.com/findlyra" className="hover:text-white transition-colors" aria-label="Twitter">
+                <Twitter size={20} />
+              </a>
+               <a href="#" className="hover:text-white transition-colors" aria-label="Facebook">
+                <Facebook size={20} />
+              </a>
+              <a href="#" className="hover:text-white transition-colors" aria-label="LinkedIn">
+                <Linkedin size={20} />
+              </a>
+              <a href="#" className="hover:text-white transition-colors" aria-label="YouTube">
+                <Youtube size={20} />
               </a>
             </div>
-            
-            {/* Desktop Navigation */}
-            <div className="hidden md:block">
-              <div className="ml-10 flex items-center space-x-4">
-                <button 
-                  onClick={() => scrollToSection('mission')} 
-                  className="text-white hover:bg-white/10 px-3 py-2 rounded-md text-sm font-medium transition-colors"
-                >
-                  Mission
-                </button>
-                <button 
-                  onClick={() => scrollToSection('features')} 
-                  className="text-white hover:bg-white/10 px-3 py-2 rounded-md text-sm font-medium transition-colors"
-                >
-                  Features
-                </button>
-                <button 
-                  onClick={() => scrollToSection('support')} 
-                  className="text-white hover:bg-white/10 px-3 py-2 rounded-md text-sm font-medium transition-colors"
-                >
-                  Support
-                </button>
-                <button 
-                  onClick={() => scrollToSection('safety')} 
-                  className="text-white hover:bg-white/10 px-3 py-2 rounded-md text-sm font-medium transition-colors"
-                >
-                  Safety
-                </button>
-              </div>
-            </div>
-            
-            {/* CTA Buttons */}
-            <div className="flex items-center">
-              <Button 
-                onClick={() => navigate('/interest')}
-                className="mr-3 bg-gradient-to-r from-[hsl(var(--primary))] to-[hsl(var(--accent))] text-white px-4 py-2 rounded-md text-sm shadow-glow transition-all hover:shadow-glow-intense"
-              >
-                Join Waitlist
-              </Button>
-              
-              {!user ? (
-                <Button 
-                  onClick={() => {
-                    console.log('Index: Navigating to auth page');
-                    navigate('/auth');
-                  }}
-                  className="bg-white/10 hover:bg-white/20 text-white px-4 py-2 rounded-md text-sm transition-colors"
-                >
-                  Sign In
-                </Button>
-              ) : (
-                <Button 
-                  onClick={async () => {
-                    try {
-                      console.log('Index: Starting enhanced sign-out process');
-                      
-                      // Update UI immediately for better user experience
-                      setUser(null);
-                      
-                      // Use our robust forceSignOut utility
-                      const success = await forceSignOut();
-                      
-                      if (success) {
-                        console.log('Index: Force sign-out successful');
-                        
-                        // Toast notification
-                        toast({
-                          title: "Signed out",
-                          description: "You have been successfully signed out",
-                        });
-                        
-                        // Force full page reload to ensure clean state
-                        setTimeout(() => {
-                          window.location.href = '/';
-                        }, 300); // Small delay to allow toast to show
-                      } else {
-                        throw new Error('Force sign-out failed');
-                      }
-                    } catch (error) {
-                      console.error('Index: Sign-out error:', error);
-                      toast({
-                        title: "Error signing out",
-                        description: "Please try refreshing the page",
-                        variant: "destructive"
-                      });
-                      
-                      // Last resort - force a full page reload
-                      setTimeout(() => {
-                        window.location.href = '/';
-                      }, 1500);
-                    }
-                  }}
-                  className="bg-white/10 hover:bg-white/20 text-white px-4 py-2 rounded-md text-sm transition-colors"
-                >
-                  Sign Out
-                </Button>
-              )}
-            </div>
-            
-            {/* Mobile menu button */}
-            <div className="md:hidden flex items-center">
-              <Button 
-                onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-                className="mobile-menu-button inline-flex items-center justify-center p-2 rounded-md text-white hover:bg-white/10 focus:outline-none"
-              >
-                <Menu className="h-6 w-6" />
-              </Button>
-            </div>
+          </div>
+
+          {/* Quick Links */}
+          <div>
+            <h3 className="text-lg font-semibold text-white mb-4">Quick Links</h3>
+            <ul className="space-y-2 text-sm">
+              <li><Link to="/about" className="hover:text-white transition-colors inline-flex items-center"><ChevronRight size={14} className="mr-1" /> About Us</Link></li>
+              <li><Link to="/blog" className="hover:text-white transition-colors inline-flex items-center"><ChevronRight size={14} className="mr-1" /> Blog</Link></li>
+              <li><Link to="/careers" className="hover:text-white transition-colors inline-flex items-center"><ChevronRight size={14} className="mr-1" /> Careers</Link></li>
+              <li><Link to="/press" className="hover:text-white transition-colors inline-flex items-center"><ChevronRight size={14} className="mr-1" /> Press</Link></li>
+              <li><Link to="/privacy" className="hover:text-white transition-colors inline-flex items-center"><ChevronRight size={14} className="mr-1" /> Privacy Policy</Link></li>
+              <li><Link to="/terms" className="hover:text-white transition-colors inline-flex items-center"><ChevronRight size={14} className="mr-1" /> Terms of Service</Link></li>
+              <li><Link to="/contact" className="hover:text-white transition-colors inline-flex items-center"><ChevronRight size={14} className="mr-1" /> Contact Us</Link></li>
+            </ul>
           </div>
           
-          {/* Mobile Navigation - Hidden by default */}
-          {mobileMenuOpen && (
-            <div className="md:hidden mobile-menu">
-              <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3">
-                <button 
-                  onClick={() => {
-                    scrollToSection('mission');
-                    setMobileMenuOpen(false);
-                  }} 
-                  className="block text-white hover:bg-white/10 px-3 py-2 rounded-md text-base font-medium w-full text-left"
-                >
-                  Mission
-                </button>
-                <button 
-                  onClick={() => {
-                    scrollToSection('features');
-                    setMobileMenuOpen(false);
-                  }} 
-                  className="block text-white hover:bg-white/10 px-3 py-2 rounded-md text-base font-medium w-full text-left"
-                >
-                  Features
-                </button>
-                <button 
-                  onClick={() => {
-                    scrollToSection('support');
-                    setMobileMenuOpen(false);
-                  }} 
-                  className="block text-white hover:bg-white/10 px-3 py-2 rounded-md text-base font-medium w-full text-left"
-                >
-                  Support
-                </button>
-                <button 
-                  onClick={() => {
-                    scrollToSection('safety');
-                    setMobileMenuOpen(false);
-                  }} 
-                  className="block text-white hover:bg-white/10 px-3 py-2 rounded-md text-base font-medium w-full text-left"
-                >
-                  Safety
-                </button>
-              </div>
-            </div>
-          )}
-        </div>
-      </nav>
-      
-      {/* Main hero content area */}
-      <main className="flex-1 flex flex-col items-center justify-center text-center py-12 sm:py-16 md:py-24 relative" style={{
-        backgroundImage: "url('/index6.jpeg')",
-        backgroundSize: "cover",
-        backgroundPosition: "center",
-        boxShadow: "inset 0 0 150px rgba(0,0,0,0.5)"
-      }}>
-        {/* Lighter overlay without blur for clearer background */}
-        <div className="absolute inset-0 bg-gradient-to-b from-[rgba(10,15,40,0.5)] to-[rgba(5,10,30,0.6)] z-0"></div>
-        
-        <div className="w-full max-w-3xl mx-auto p-3 sm:p-6 rounded-xl sm:rounded-2xl relative z-10 bg-black/20 border border-white/20">
-          {/* Hero section with logo and tagline */}
-          <div className="flex flex-col items-center">
-            <div className="mb-4 md:mb-6">
-              <h1 className="lyra-logo text-4xl sm:text-5xl mb-2 md:mb-4">Lyra</h1>
-            </div>
-            
-            {/* Main headline with enhanced contrast */}
-            <h2 className="text-xl xs:text-2xl sm:text-3xl md:text-4xl font-bold tracking-tight mb-3 sm:mb-4 md:mb-6 text-white sleek-heading text-shadow-lg">
-              Where <span className="text-primary">Music</span> and the
-              <span className="text-accent"> Stars</span> Connect
-            </h2>
-                          
-            {/* Orpheus AI description with improved contrast */}
-            <p className="text-sm sm:text-base text-white mb-4 sm:mb-6 md:mb-8 sleek-text text-shadow-sm">
-              OrpheusAI powered by your music preference and real-time satellite data.
+          {/* App downloads */}
+          <div>
+            <h3 className="text-lg font-semibold text-white mb-4">Download App</h3>
+            <p className="text-sm text-slate-400 mb-4">
+              Get the Lyra experience on your mobile device. Coming soon to iOS and Android.
             </p>
-
-            {/* Call to action buttons */}
-            <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 md:gap-4 justify-center w-full px-2">
-              <Button
-                size="default"
-                onClick={() => navigate("/interest")}
-                className="mobile-btn sm:sleek-button text-sm md:text-base px-3 sm:px-4 md:px-6 py-1 md:py-2 h-auto rounded-lg shadow-md text-white w-full sm:w-auto touch-target hover:bg-white/10"
+            <div className="space-y-3">
+              <button 
+                className="w-full flex items-center p-3 border border-slate-700 rounded-lg bg-slate-800 hover:bg-slate-700 transition-colors"
+                onClick={() => toast({ title: "Coming Soon", description: "The Lyra app for iOS will be available soon!"})}
               >
-                Join Waitlist
-                <Sparkles className="ml-2 h-4 w-4" />
-              </Button>
-              
-              {!user && (
-                <Button
-                  size="default"
-                  onClick={() => navigate("/auth")}
-                  className="mobile-btn sm:sleek-button text-sm md:text-base px-3 sm:px-4 md:px-6 py-1 md:py-2 h-auto rounded-lg shadow-md text-white w-full sm:w-auto touch-target hover:bg-white/10"
-                >
-                  <span className="hidden sm:inline">Sign In / Sign Up</span>
-                  <span className="sm:hidden">Sign In</span>
-                  <User className="ml-2 h-4 w-4" />
-                </Button>
-              )}
-            </div>
-          </div>
-        </div>
-      </main>
-      
-      {/* Mission section */}
-      <section id="mission" className="w-full py-12 sm:py-16 md:py-24 relative" style={{
-        backgroundImage: "url('/index11.jpeg')",
-        backgroundSize: "cover",
-        backgroundPosition: "center",
-        boxShadow: "inset 0 0 150px rgba(0,0,0,0.5)"
-      }}>
-        {/* Lighter overlay for better image clarity */}
-        <div className="absolute inset-0 bg-gradient-to-b from-[rgba(5,10,30,0.3)] to-[rgba(10,15,40,0.4)] z-0"></div>
-        
-        <div className="container mx-auto px-3 sm:px-4 relative z-10">
-          <div className="max-w-3xl mx-auto text-center bg-black/15 p-8 rounded-xl border border-white/20">
-            <h2 className="text-xl xs:text-2xl md:text-3xl font-bold text-center mb-4 sm:mb-8 sleek-heading text-white text-shadow-lg">Our Mission</h2>
-            
-            <p className="text-sm sm:text-base text-white mb-4 sm:mb-8 leading-relaxed text-shadow-sm">
-              At Lyra, we believe the universe speaks to us through music. Our mission is to harness the cosmic 
-              connection between music preferences and astrological influences to create the most resonant and 
-              meaningful connections between people.
-            </p>
-            
-            <p className="text-sm sm:text-base text-white mb-4 sm:mb-8 leading-relaxed text-shadow-sm">
-              Through our advanced OrpheusAI technology, we analyze patterns in music taste, astrological data, 
-              and personality traits to recommend connections that truly resonate on both human and cosmic levels.
-            </p>
-          </div>
-        </div>
-      </section>
-
-      {/* Features section with different background */}
-      <section id="features" className="w-full py-12 sm:py-16 md:py-24 relative overflow-hidden" style={{
-        backgroundImage: "url('/index3.jpg')",
-        backgroundSize: "cover",
-        backgroundPosition: "center",
-        boxShadow: "inset 0 0 150px rgba(0,0,0,0.5)"
-      }}>
-        {/* Lighter overlay without blur for clearer background */}
-        <div className="absolute inset-0 bg-gradient-to-b from-[rgba(10,20,40,0.5)] to-[rgba(5,15,35,0.6)] z-0"></div>
-        
-        <div className="container mx-auto px-3 sm:px-4 relative z-10">
-          <div className="bg-black/15 p-6 rounded-xl border border-white/20 mb-8 sm:mb-12 max-w-3xl mx-auto">
-            <h2 className="text-xl xs:text-2xl md:text-3xl font-bold text-center sleek-heading text-white text-shadow-lg">How Lyra Works</h2>
-          </div>
-          
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 md:gap-6 md:gap-8">
-            {[
-              {
-                icon: Music,
-                title: "Music Matching",
-                description: "Our AI model Orpheus analyzes your music tastes to find matches with compatible listening habits.",
-              },
-              {
-                icon: Star,
-                title: "Stellar Aligning",
-                description: "With real time planetary positional data, Orpheus aligns your music preferences with the stars for the most resonant connections.",
-              },
-              {
-                icon: BarChart3,
-                title: "Compatibility Analysis",
-                description: "Detailed insights about your compatibility with potential matches based on musical and astrological data.",
-              },
-            ].map((feature, index) => (
-              <div 
-                key={index}
-                className="solid-overlay-card p-4 sm:p-6 rounded-xl shadow-md hover:shadow-lg transition-all border border-white/15 bg-black/15 hover:bg-black/20 hover:scale-[1.02] transform transition-all"
-              >
-                <div className="mb-4 p-3 inline-block rounded-full bg-[rgba(120,180,255,0.15)]">
-                  <feature.icon className="h-6 w-6 text-[hsl(var(--primary))]" />
+                <Download size={24} className="mr-3 text-purple-400" />
+                <div>
+                  <p className="text-xs text-slate-400">Download on the</p>
+                  <p className="text-sm font-semibold text-white">App Store</p>
                 </div>
-                <h3 className="text-xl font-semibold mb-3 sleek-heading text-white text-shadow-sm">{feature.title}</h3>
-                <p className="text-sm text-white sleek-text leading-relaxed text-shadow-sm">{feature.description}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Countdown section with different background */}
-      <section className="w-full py-12 sm:py-16 md:py-24 relative overflow-hidden" style={{
-        backgroundImage: "url('/index10.jpeg')",
-        backgroundSize: "cover",
-        backgroundPosition: "center",
-        boxShadow: "inset 0 0 150px rgba(0,0,0,0.5)"
-      }}>
-        {/* Lighter overlay without blur for clearer background */}
-        <div className="absolute inset-0 bg-gradient-to-b from-[rgba(15,25,50,0.5)] to-[rgba(10,20,45,0.6)] z-0"></div>
-        
-        <div className="container mx-auto px-3 sm:px-4 relative z-10">
-          <div className="max-w-3xl mx-auto bg-black/15 p-8 rounded-xl border border-white/20">
-            <h2 className="text-xl xs:text-2xl md:text-3xl font-bold text-center mb-6 sm:mb-10 sleek-heading text-white text-shadow-lg">Launching In</h2>
-            
-            <CountdownTimer />
-            
-            <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 md:gap-4 justify-center mt-8 sm:mt-12">
-              <Button
-                size="default"
-                onClick={() => navigate("/interest")}
-                className="mobile-btn sm:sleek-button text-sm md:text-base px-3 sm:px-4 md:px-6 py-1 md:py-2 h-auto rounded-lg shadow-md text-white w-full sm:w-auto touch-target hover:bg-white/10"
+              </button>
+              <button 
+                className="w-full flex items-center p-3 border border-slate-700 rounded-lg bg-slate-800 hover:bg-slate-700 transition-colors"
+                onClick={() => toast({ title: "Coming Soon", description: "The Lyra app for Android will be available soon!"})}
               >
-                Join Waitlist
-                <Sparkles className="ml-2 h-4 w-4" />
-              </Button>
+                <Download size={24} className="mr-3 text-purple-400" />
+                <div>
+                  <p className="text-xs text-slate-400">Get it on</p>
+                  <p className="text-sm font-semibold text-white">Google Play</p>
+                </div>
+              </button>
             </div>
           </div>
-        </div>
-      </section>
 
-      {/* Support section */}
-      <section id="support" className="w-full py-12 sm:py-16 md:py-24 relative overflow-hidden" style={{
-        backgroundImage: "url('/index13.jpeg')",
-        backgroundSize: "cover",
-        backgroundPosition: "center bottom",
-        backgroundAttachment: "fixed",
-        boxShadow: "inset 0 0 150px rgba(0,0,0,0.5)"
-      }}>
-        {/* Lighter overlay without blur for clearer background */}
-        <div className="absolute inset-0 bg-gradient-to-br from-[rgba(20,30,60,0.5)] to-[rgba(40,50,80,0.6)] z-0"></div>
-        
-        <div className="container mx-auto px-3 sm:px-4 relative z-10">
-          <div className="max-w-3xl mx-auto text-center bg-black/15 p-8 rounded-xl border border-white/20">
-            <h2 className="text-xl xs:text-2xl md:text-3xl font-bold text-center mb-4 sm:mb-8 sleek-heading text-white text-shadow-lg">Support</h2>
-            
-            <p className="text-sm sm:text-base text-white mb-4 sm:mb-8 leading-relaxed text-shadow-sm">
-              We're here to help you throughout your cosmic journey. Whether you have questions about 
-              how our matching algorithm works or need assistance with your account, our support team 
-              is ready to provide guidance.
+          {/* Newsletter/Stay Updated */}
+          <div>
+            <h3 className="text-lg font-semibold text-white mb-4">Stay Updated</h3>
+            <p className="text-sm text-slate-400 mb-4">
+              Subscribe to our newsletter for the latest updates and launch news.
             </p>
-            
-            <Button
-              size="default"
-              onClick={() => window.location.href = "mailto:support@lyra-app.com"}
-              className="mobile-btn sm:sleek-button text-sm md:text-base px-3 sm:px-4 md:px-6 py-1 md:py-2 h-auto rounded-lg shadow-md text-white touch-target hover:bg-white/10"
-            >
-              Contact Support
-              <Mail className="ml-2 h-4 w-4" />
-            </Button>
+            <form className="flex flex-col sm:flex-row gap-2">
+              <input 
+                type="email" 
+                placeholder="Enter your email"
+                className="flex-grow p-2 rounded-md bg-slate-800 border border-slate-700 focus:ring-purple-500 focus:border-purple-500 outline-none text-sm"
+              />
+              <button 
+                type="submit" 
+                className="px-4 py-2 bg-purple-600 rounded-md hover:bg-purple-700 transition-colors text-sm font-semibold"
+                onClick={(e) => { e.preventDefault(); toast({title: "Subscribed!", description: "Thanks for subscribing!"}); }}
+              >
+                Subscribe
+              </button>
+            </form>
           </div>
         </div>
-      </section>
-      
-      {/* Safety section */}
-      <section id="safety" className="w-full py-12 sm:py-16 md:py-24 relative overflow-hidden" style={{
-        backgroundImage: "url('/index9.jpeg')",
-        backgroundSize: "cover",
-        backgroundPosition: "center",
-        backgroundAttachment: "fixed",
-        boxShadow: "inset 0 0 150px rgba(0,0,0,0.5)"
-      }}>
-        {/* Dark overlay with adjusted opacity for optimal contrast - no blur */}
-        <div className="absolute inset-0 bg-gradient-to-b from-[rgba(0,10,20,0.5)] to-[rgba(5,15,25,0.6)] z-0"></div>
         
-        <div className="container mx-auto px-3 sm:px-4 relative z-10">
-          <div className="max-w-3xl mx-auto text-center bg-black/15 p-8 rounded-xl border border-white/20">
-            <h2 className="text-xl xs:text-2xl md:text-3xl font-bold text-center mb-4 sm:mb-8 sleek-heading text-white text-shadow-lg">Safety</h2>
-            
-            <p className="text-sm sm:text-base text-white mb-4 sm:mb-8 leading-relaxed text-shadow-sm">
-              Your safety and privacy are our highest priorities. Lyra implements industry-leading security 
-              measures to protect your data and ensure a safe environment for making connections.
-            </p>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 text-left">
-              <div className="bg-black/20 p-4 sm:p-6 rounded-xl border border-white/10 hover:border-white/30 transition-all transform hover:translate-y-[-2px]">
-                <h3 className="text-base sm:text-lg font-semibold mb-2 sm:mb-3 text-white text-shadow-sm">Data Protection</h3>
-                <p className="text-xs sm:text-sm text-white/90">
-                  We use end-to-end encryption and follow strict data protection protocols 
-                  to safeguard your personal information and music preferences.
-                </p>
-              </div>
-              
-              <div className="bg-black/20 p-4 sm:p-6 rounded-xl border border-white/10 hover:border-white/30 transition-all transform hover:translate-y-[-2px]">
-                <h3 className="text-base sm:text-lg font-semibold mb-2 sm:mb-3 text-white text-shadow-sm">Community Guidelines</h3>
-                <p className="text-xs sm:text-sm text-white/90">
-                  Our community is built on respect and authenticity. We have zero tolerance 
-                  for harassment or inappropriate behavior.
-                </p>
-              </div>
-            </div>
+        {/* Footer bottom with copyright */}
+        <div className="mt-10 pt-8 border-t border-slate-700 flex flex-col md:flex-row justify-between items-center text-sm text-slate-500">
+          <div className="flex items-center mb-2 md:mb-0">
+            <Copyright size={14} className="mr-1.5" /> {new Date().getFullYear()} Lyra. All rights reserved.
           </div>
-        </div>
-      </section>
-
-      {/* Footer - Enhanced with multiple sections, links, and app store downloads */}
-      <footer className="w-full text-white pt-6 pb-0 safe-area-padding border-t border-white/10 mb-0" style={{
-        backgroundImage: "linear-gradient(to bottom, rgba(5, 14, 29, 0.4), rgba(10, 20, 38, 0.5)), url('/index3.jpg')",
-        backgroundSize: "cover",
-        backgroundPosition: "center bottom",
-        backgroundBlendMode: "normal",
-        boxShadow: "inset 0 0 150px rgba(0,0,0,0.3)",
-        marginBottom: 0
-      }}>
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-4">
-            {/* Logo and description */}
-            <div className="space-y-4">
-              <div className="flex items-center">
-                <span className="lyra-logo text-2xl">Lyra</span>
-              </div>
-              <p className="text-sm text-white/70 max-w-xs">
-                Connecting people through the cosmic harmony of music and astrology,
-                powered by OrpheusAI technology.
-              </p>
-              
-              {/* Social media links */}
-              <div className="flex space-x-4 pt-2">
-                <a href="https://www.tiktok.com/@findinglyra" className="text-white/70 hover:text-white transition-colors" aria-label="TikTok">
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M19.321 5.562C17.9222 4.0454 17.125 2.05361 17.098 0H12.996V16.371C12.9681 17.0361 12.7204 17.6747 12.2939 18.1895C11.8674 18.7043 11.2859 19.0673 10.633 19.2223C9.9802 19.3772 9.29569 19.3157 8.68036 19.0471C8.06502 18.7785 7.55632 18.3179 7.23939 17.7398C6.92245 17.1617 6.81722 16.5002 6.9404 15.8616C7.06358 15.223 7.40723 14.6418 7.91723 14.2031C8.42722 13.7644 9.0764 13.493 9.75695 13.4307C10.4375 13.3683 11.1196 13.5184 11.702 13.858V9.644C10.6522 9.51311 9.59014 9.62238 8.59576 9.96271C7.60138 10.303 6.70611 10.866 5.9801 11.6059C5.25409 12.3459 4.72235 13.2444 4.42171 14.2291C4.12108 15.2137 4.06017 16.2567 4.24349 17.2704C4.4268 18.2841 4.84845 19.2374 5.47242 20.053C6.09639 20.8685 6.90195 21.5227 7.82276 21.9616C8.74358 22.4005 9.75467 22.6111 10.7751 22.5771C11.7954 22.5432 12.7901 22.2654 13.681 21.7637C14.5719 21.262 15.3317 20.5495 15.8969 19.6855C16.4621 18.8216 16.818 17.8309 16.934 16.8041C17.05 15.7772 16.9229 14.7361 16.562 13.763V7.216C18.0324 8.2306 19.7104 8.90033 21.47 9.17V5.173C20.8093 5.16943 20.1551 5.05856 19.534 4.8452C18.9129 4.63183 18.3336 4.31906 17.823 3.921L19.321 5.562Z" fill="currentColor"/>
-                  </svg>
-                </a>
-                <a href="https://www.instagram.com/findlyra/" className="text-white/70 hover:text-white transition-colors" aria-label="Instagram">
-                  <Instagram size={20} />
-                </a>
-                <a href="https://twitter.com" className="text-white/70 hover:text-white transition-colors" aria-label="Twitter">
-                  <Twitter size={20} />
-                </a>
-                <a href="https://facebook.com" className="text-white/70 hover:text-white transition-colors" aria-label="Facebook">
-                  <Facebook size={20} />
-                </a>
-                <a href="https://linkedin.com" className="text-white/70 hover:text-white transition-colors" aria-label="LinkedIn">
-                  <Linkedin size={20} />
-                </a>
-                <a href="https://youtube.com" className="text-white/70 hover:text-white transition-colors" aria-label="YouTube">
-                  <Youtube size={20} />
-                </a>
-              </div>
-            </div>
-            
-            {/* Site navigation */}
-            <div>
-              <h3 className="text-lg font-semibold mb-4">Site</h3>
-              <ul className="space-y-2">
-                <li>
-                  <a href="#mission" className="text-white/70 hover:text-white transition-colors text-sm inline-flex items-center">
-                    <ChevronRight size={14} className="mr-1" /> Mission
-                  </a>
-                </li>
-                <li>
-                  <a href="#features" className="text-white/70 hover:text-white transition-colors text-sm inline-flex items-center">
-                    <ChevronRight size={14} className="mr-1" /> Features
-                  </a>
-                </li>
-                <li>
-                  <a href="#support" className="text-white/70 hover:text-white transition-colors text-sm inline-flex items-center">
-                    <ChevronRight size={14} className="mr-1" /> Support
-                  </a>
-                </li>
-                <li>
-                  <a href="#safety" className="text-white/70 hover:text-white transition-colors text-sm inline-flex items-center">
-                    <ChevronRight size={14} className="mr-1" /> Safety
-                  </a>
-                </li>
-                <li>
-                  <a href="/interest" className="text-white/70 hover:text-white transition-colors text-sm inline-flex items-center">
-                    <ChevronRight size={14} className="mr-1" /> Join Waitlist
-                  </a>
-                </li>
-              </ul>
-            </div>
-            
-            {/* Legal and careers */}
-            <div>
-              <h3 className="text-lg font-semibold mb-4">Company</h3>
-              <ul className="space-y-2">
-                <li>
-                  <a href="/about" className="text-white/70 hover:text-white transition-colors text-sm inline-flex items-center">
-                    <ChevronRight size={14} className="mr-1" /> About Us
-                  </a>
-                </li>
-                <li>
-                  <a href="/careers" className="text-white/70 hover:text-white transition-colors text-sm inline-flex items-center">
-                    <ChevronRight size={14} className="mr-1" /> Careers <span className="ml-1.5 text-xs bg-[hsl(var(--primary))] px-1.5 py-0.5 rounded-full">Hiring</span>
-                  </a>
-                </li>
-                <li>
-                  <a href="/privacy" className="text-white/70 hover:text-white transition-colors text-sm inline-flex items-center">
-                    <ChevronRight size={14} className="mr-1" /> Privacy Policy
-                  </a>
-                </li>
-                <li>
-                  <a href="/terms" className="text-white/70 hover:text-white transition-colors text-sm inline-flex items-center">
-                    <ChevronRight size={14} className="mr-1" /> Terms of Service
-                  </a>
-                </li>
-                <li>
-                  <a href="/contact" className="text-white/70 hover:text-white transition-colors text-sm inline-flex items-center">
-                    <ChevronRight size={14} className="mr-1" /> Contact Us
-                  </a>
-                </li>
-              </ul>
-            </div>
-            
-            {/* App downloads */}
-            <div>
-              <h3 className="text-lg font-semibold mb-4">Download App</h3>
-              <p className="text-sm text-white/70 mb-4">
-                Get the Lyra experience on your mobile device. Coming soon to iOS and Android.
-              </p>
-              
-              <div className="space-y-3">
-                <a 
-                  href="#" 
-                  className="flex items-center p-2 border border-white/20 rounded-lg bg-black/30 hover:bg-black/50 transition-colors"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    toast({
-                      title: "Coming Soon",
-                      description: "The Lyra app will be available for download soon!",
-                      variant: "default"
-                    });
-                  }}
-                >
-                  <div className="mr-3">
-                    <Download size={24} />
-                  </div>
-                  <div>
-                    <p className="text-xs">Download on the</p>
-                    <p className="text-sm font-semibold">App Store</p>
-                  </div>
-                </a>
-                
-                <a 
-                  href="#" 
-                  className="flex items-center p-2 border border-white/20 rounded-lg bg-black/30 hover:bg-black/50 transition-colors"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    toast({
-                      title: "Coming Soon",
-                      description: "The Lyra app will be available for download soon!",
-                      variant: "default"
-                    });
-                  }}
-                >
-                  <div className="mr-3">
-                    <Download size={24} />
-                  </div>
-                  <div>
-                    <p className="text-xs">Get it on</p>
-                    <p className="text-sm font-semibold">Google Play</p>
-                  </div>
-                </a>
-              </div>
-            </div>
-          </div>
-          
-          {/* Footer bottom with copyright */}
-          <div className="pt-3 border-t border-white/10 flex flex-col md:flex-row justify-between items-center space-y-1 md:space-y-0 pb-0">
-            <div className="flex items-center text-white/60 text-sm">
-              <Copyright size={14} className="mr-1" /> {new Date().getFullYear()} Lyra. All rights reserved.
-            </div>
-            
-            <div className="flex space-x-4 text-sm text-white/60">
-              <a href="/privacy" className="hover:text-white transition-colors">Privacy</a>
-              <span>•</span>
-              <a href="/terms" className="hover:text-white transition-colors">Terms</a>
-              <span>•</span>
-              <a href="/cookies" className="hover:text-white transition-colors">Cookies</a>
-            </div>
+          <div className="flex space-x-3">
+            <Link to="/privacy" className="hover:text-white transition-colors">Privacy Policy</Link>
+            <span className="select-none">•</span>
+            <Link to="/terms" className="hover:text-white transition-colors">Terms of Service</Link>
+            <span className="select-none">•</span>
+            <Link to="/cookies" className="hover:text-white transition-colors">Cookie Policy</Link>
           </div>
         </div>
       </footer>
@@ -689,22 +271,15 @@ const Index = () => {
 };
 
 const CountdownTimer = () => {
-  // Set launch date to exactly one month from today (June 5, 2025)
-  const launchDate = new Date("2025-06-05T12:00:00+01:00");
+  const launchDate = new Date("2025-07-05T12:00:00+01:00"); // Adjusted launch date for example
   
   const [timeLeft, setTimeLeft] = useState({
-    days: 0,
-    hours: 0,
-    minutes: 0,
-    seconds: 0
+    days: 0, hours: 0, minutes: 0, seconds: 0
   });
 
   useEffect(() => {
     const calculateTimeLeft = () => {
-      // Get current time
-      const now = new Date();
-      const difference = launchDate.getTime() - now.getTime();
-      
+      const difference = +launchDate - +new Date();
       if (difference > 0) {
         setTimeLeft({
           days: Math.floor(difference / (1000 * 60 * 60 * 24)),
@@ -714,59 +289,33 @@ const CountdownTimer = () => {
         });
       }
     };
-
-    // Calculate immediately
     calculateTimeLeft();
-    
-    // Then update every second
     const timer = setInterval(calculateTimeLeft, 1000);
-    
-    // Cleanup interval on component unmount
     return () => clearInterval(timer);
   }, []);
 
   return (
     <div className="flex flex-col items-center">
       <div className="grid grid-cols-4 gap-2 sm:gap-4 w-full max-w-md">
-        {/* Days */}
-        <div className="flex flex-col items-center">
-          <div className="bg-black/30 backdrop-blur-md rounded-lg p-2 sm:p-4 w-full text-center border border-blue-400/30 hover:border-blue-400/50 transition-colors">
-            <span className="text-2xl sm:text-4xl font-bold text-white">{timeLeft.days}</span>
+        {['days', 'hours', 'minutes', 'seconds'].map((unit) => (
+          <div key={unit} className="flex flex-col items-center">
+            <div className="bg-slate-800/50 backdrop-blur-sm rounded-lg p-3 sm:p-5 w-full text-center border border-purple-500/30 hover:border-purple-500/50 transition-colors shadow-lg">
+              <span className="text-3xl sm:text-5xl font-bold text-white">
+                {/* @ts-ignore */}
+                {String(timeLeft[unit]).padStart(2, '0')}
+              </span>
+            </div>
+            <span className="text-xs sm:text-sm mt-2 text-slate-400 capitalize">{unit}</span>
           </div>
-          <span className="text-xs sm:text-sm mt-1 text-white/80">Days</span>
-        </div>
-        
-        {/* Hours */}
-        <div className="flex flex-col items-center">
-          <div className="bg-black/30 backdrop-blur-md rounded-lg p-2 sm:p-4 w-full text-center border border-blue-400/30 hover:border-blue-400/50 transition-colors">
-            <span className="text-2xl sm:text-4xl font-bold text-white">{String(timeLeft.hours).padStart(2, '0')}</span>
-          </div>
-          <span className="text-xs sm:text-sm mt-1 text-white/80">Hours</span>
-        </div>
-        
-        {/* Minutes */}
-        <div className="flex flex-col items-center">
-          <div className="bg-black/30 backdrop-blur-md rounded-lg p-2 sm:p-4 w-full text-center border border-blue-400/30 hover:border-blue-400/50 transition-colors">
-            <span className="text-2xl sm:text-4xl font-bold text-white">{String(timeLeft.minutes).padStart(2, '0')}</span>
-          </div>
-          <span className="text-xs sm:text-sm mt-1 text-white/80">Minutes</span>
-        </div>
-        
-        {/* Seconds */}
-        <div className="flex flex-col items-center">
-          <div className="bg-black/30 backdrop-blur-md rounded-lg p-2 sm:p-4 w-full text-center border border-blue-400/30 hover:border-blue-400/50 transition-colors">
-            <span className="text-2xl sm:text-4xl font-bold text-white">{String(timeLeft.seconds).padStart(2, '0')}</span>
-          </div>
-          <span className="text-xs sm:text-sm mt-1 text-white/80">Seconds</span>
-        </div>
+        ))}
       </div>
-      
-      <div className="flex items-center mt-4 mb-2">
-        <Clock className="h-4 w-4 mr-2 text-blue-400" />
-        <span className="text-xs sm:text-sm text-white/80">Until Official Launch (London Time)</span>
+      <div className="flex items-center mt-4 mb-2 text-slate-400">
+        <Clock className="h-4 w-4 mr-2 text-purple-400" />
+        <span className="text-xs sm:text-sm">Until Official Launch (London Time)</span>
       </div>
     </div>
   );
 };
 
 export default Index;
+

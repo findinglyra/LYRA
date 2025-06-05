@@ -15,6 +15,10 @@
   --background: 206 100% 98%;
   --foreground: 209 100% 19%;   /* Using Navy Blue for text */
 
+  /* Popover theming (NEW) */
+  --popover: var(--background); /* Use main background for popovers */
+  --popover-foreground: var(--foreground); /* Use main foreground for popover text */
+
   --primary: 204 87% 44%;       /* Blue Grotto as primary */
   --primary-muted: 201 70% 90%; /* Lighter version of Baby Blue */
   --primary-foreground: 0 0% 100%;
@@ -68,7 +72,18 @@
   overflow: visible;
 }
 
-/* Cosmic stars background */
+/*
+// --- COSMIC THEME STYLES - DISABLED ---
+// The .cosmic-stars, @keyframes twinkle, .cosmic-bg,
+// .cosmic-bg::before, and .cosmic-bg > * rules
+// were previously here and have been commented out
+// to shift towards a music-powered theme.
+*/
+
+/*
+// --- COSMIC THEME STYLES - DISABLED ---
+// The .cosmic-stars, @keyframes twinkle rules were previously here.
+// This comment block now correctly encloses the original rules.
 .cosmic-stars {
   position: fixed;
   top: 0;
@@ -109,6 +124,7 @@
     background-position: 100px 100px;
   }
 }
+*/
 
 /* Glass card effect */
 .glass-card {
@@ -167,16 +183,23 @@
   box-shadow: 0 0 0 2px rgba(255, 215, 80, 0.15) !important;
 }
 
-/* Cosmic backgrounds for all pages */
+/*
+// --- COSMIC BACKGROUND STYLES - DISABLED ---
+// The .cosmic-bg related styles
+// were previously here and have been commented out
+// to shift towards a music-powered theme.
+*/
+
+/*
 .cosmic-bg {
   background-image: url('/gettyimages-678545430-2048x2048.png');
   background-size: cover;
   background-position: center;
   background-attachment: fixed;
   position: relative;
-  image-rendering: -webkit-optimize-contrast; /* For Webkit browsers */
-  image-rendering: crisp-edges; /* For Firefox */
-  -ms-interpolation-mode: nearest-neighbor; /* For IE */
+  image-rendering: -webkit-optimize-contrast; 
+  image-rendering: crisp-edges; 
+  -ms-interpolation-mode: nearest-neighbor; 
 }
 
 .cosmic-bg::before {
@@ -188,7 +211,7 @@
   bottom: 0;
   background: linear-gradient(135deg, rgba(5, 15, 40, 0.65), rgba(10, 25, 50, 0.7));
   z-index: 0;
-  backdrop-filter: none; /* Remove any blurring effects */
+  backdrop-filter: none; 
   -webkit-backdrop-filter: none;
 }
 
@@ -196,6 +219,7 @@
   position: relative;
   z-index: 1;
 }
+*/
 
 /* Star constellation effects */
 .lyra-constellation {

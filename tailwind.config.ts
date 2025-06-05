@@ -53,6 +53,14 @@ export default {
           sage: "#94A18E",
           sand: "#F7E6D0",
           navy: "#2D3250",
+          // Aurora Borealis Palette
+          'aurora-deep-purple-1': '#36013F',
+          'aurora-deep-purple-2': '#301934',
+          'aurora-deep-purple-3': '#20124F',
+          'aurora-sky-blue': '#00BFFF',
+          'aurora-green-1': '#78BE20',
+          'aurora-green-2': '#14E81E',
+          'aurora-green-3': '#89FF77',
         },
       },
       keyframes: {

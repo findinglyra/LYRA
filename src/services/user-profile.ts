@@ -63,7 +63,13 @@ export async function getUserProfile(userId?: string): Promise<Profile | null> {
       throw error;
     }
     
-    return data;
+    if (!data) {
+      return null;
+    }
+    return {
+      ...data,
+      social_links: data.social_links as Record<string, string> | null,
+    } as Profile;
   } catch (error) {
     console.error('Failed to get user profile:', error);
     return null;
@@ -107,7 +113,13 @@ export async function updateUserProfile(updates: Partial<Profile>, userId?: stri
       throw error;
     }
     
-    return data;
+    if (!data) {
+      return null;
+    }
+    return {
+      ...data,
+      social_links: data.social_links as Record<string, string> | null,
+    } as Profile;
   } catch (error) {
     console.error('Failed to update profile:', error);
     return null;
@@ -137,7 +149,15 @@ export async function createUserProfile(userData: Partial<Profile>, userId?: str
     // Check if profile already exists
     const existingProfile = await getUserProfile(userId);
     if (existingProfile) {
-      return existingProfile;
+      // Profile exists, so update it with the new data instead of doing nothing.
+      // Ensure userData includes the id for the update function if not already present.
+      // Also, it's crucial that 'userId' (the definitive ID) is used for the .eq() in updateUserProfile.
+      console.warn(`createUserProfile: Profile for ${userId} already exists. Attempting to update with provided data.`);
+      const updatePayload: Partial<Profile> = { ...userData };
+      if (!updatePayload.id) {
+        updatePayload.id = userId; // Ensure ID is in the payload for updateUserProfile if it expects it
+      }
+      return updateUserProfile(updatePayload, userId); 
     }
     
     // Prepare timestamps
@@ -160,7 +180,13 @@ export async function createUserProfile(userData: Partial<Profile>, userId?: str
       throw error;
     }
     
-    return data;
+    if (!data) {
+      return null;
+    }
+    return {
+      ...data,
+      social_links: data.social_links as Record<string, string> | null,
+    } as Profile;
   } catch (error) {
     console.error('Failed to create profile:', error);
     return null;

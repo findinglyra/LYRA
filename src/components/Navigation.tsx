@@ -1,14 +1,16 @@
 
 import { Link, useLocation } from "react-router-dom";
+import { useAuth } from "@/contexts/AuthContext"; // Added for authentication status
 import { Button } from "@/components/ui/button";
 import { Heart, MessageSquare, Users, Settings, Home, Music } from "lucide-react";
 
 export const Navigation = () => {
   const location = useLocation();
   const currentPath = location.pathname;
+  const { isAuthenticated } = useAuth(); // Added for authentication status
 
   const navItems = [
-    { icon: Home, label: "Home", path: "/" },
+    { icon: Home, label: "Feed", path: isAuthenticated ? "/feed" : "/" },
     { icon: Heart, label: "Match", path: "/match" },
     { icon: MessageSquare, label: "Chat", path: "/chat" },
     { icon: Music, label: "Music", path: "/music" },

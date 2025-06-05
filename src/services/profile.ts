@@ -20,7 +20,7 @@ export interface MusicPreferences {
 // Transform from app format to database format
 function transformProfileToDb(preferences: MusicPreferences, userId: string) {
   return {
-    id: userId,
+    user_id: userId,
     genres: preferences.genres,
     artists: preferences.artists,
     songs: preferences.songs,
@@ -63,57 +63,30 @@ export async function saveProfile(userId: string, preferences: MusicPreferences)
   try {
     console.log('Saving music preferences for user:', userId);
     
-    // Transform data from app format to database format
     const dbData = transformProfileToDb(preferences, userId);
-    console.log('Transformed data:', dbData);
+    // Note: dbData already includes user_id, which is what we'll use for conflict resolution.
+    console.log('Transformed data for upsert:', dbData);
     
-    // First check if a record already exists
-    const { data: existingData, error: fetchError } = await supabase
+    const { data, error } = await supabase
       .from('music_preferences')
-      .select('*')
-      .eq('id', userId)
-      .maybeSingle();
-    
-    if (fetchError && fetchError.code !== 'PGRST116') { // PGRST116 means no rows returned
-      console.error('Error checking existing profile:', fetchError);
-      throw new Error(`Failed to check existing profile: ${fetchError.message}`);
+      .upsert(dbData, {
+        onConflict: 'user_id', // Specify the column that might conflict
+        // ignoreDuplicates: false, // Default is false, ensures it updates on conflict
+      })
+      .select(); // Select the inserted/updated row
+      
+    if (error) {
+      console.error('Error upserting profile:', error);
+      // Check for specific Supabase error details if needed
+      if (error.message.includes("constraint violation") && error.message.includes("music_preferences_user_id_fkey_correct")) {
+         console.error("Foreign key violation: The user_id does not exist in the profiles table.");
+         // Potentially throw a more specific error or handle it
+      }
+      throw new Error(`Failed to save profile: ${error.message}`);
     }
     
-    let result;
-    
-    if (existingData) {
-      // Update existing record
-      console.log('Updating existing music preferences record');
-      const { data, error } = await supabase
-        .from('music_preferences')
-        .update(dbData)
-        .eq('id', userId)
-        .select();
-      
-      if (error) {
-        console.error('Error updating profile:', error);
-        throw new Error(`Failed to update profile: ${error.message}`);
-      }
-      
-      result = data;
-    } else {
-      // Insert new record
-      console.log('Creating new music preferences record');
-      const { data, error } = await supabase
-        .from('music_preferences')
-        .insert(dbData)
-        .select();
-      
-      if (error) {
-        console.error('Error inserting profile:', error);
-        throw new Error(`Failed to insert profile: ${error.message}`);
-      }
-      
-      result = data;
-    }
-    
-    console.log('Profile saved successfully:', result);
-    return result;
+    console.log('Profile saved successfully (upsert):', data);
+    return data;
   } catch (error) {
     console.error('Unexpected error in saveProfile:', error);
     throw error instanceof Error ? error : new Error('Unknown error occurred while saving profile');
@@ -124,7 +97,7 @@ export async function getProfile(userId: string): Promise<MusicPreferences | nul
   const { data, error } = await supabase
     .from('music_preferences')
     .select('*')
-    .eq('id', userId)
+    .eq('user_id', userId)
     .single();
 
   if (error) {

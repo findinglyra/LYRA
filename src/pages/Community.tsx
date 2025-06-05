@@ -6,7 +6,7 @@ const Community = () => {
   return (
     <div className="container max-w-md mx-auto py-8 px-4 space-y-8">
       <section className="space-y-4">
-        <h2 className="text-2xl font-semibold">Music Communities</h2>
+        <h2 className="text-2xl font-semibold text-slate-800">Music Communities</h2>
         <div className="grid gap-4">
           {communities.map((community) => (
             <div
@@ -14,11 +14,11 @@ const Community = () => {
               className="p-4 rounded-xl glass-morphism space-y-3"
             >
               <div className="flex items-center gap-3">
-                <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center">
-                  <Music className="h-6 w-6 text-primary" />
+                <div className="h-12 w-12 rounded-full bg-indigo-100 flex items-center justify-center">
+                  <Music className="h-6 w-6 text-indigo-600" />
                 </div>
                 <div>
-                  <h3 className="font-medium">{community.name}</h3>
+                  <h3 className="font-medium text-slate-700">{community.name}</h3>
                   <div className="flex items-center gap-2 text-sm text-muted-foreground">
                     <Users className="h-4 w-4" />
                     <span>{community.members} members</span>
@@ -28,7 +28,7 @@ const Community = () => {
               <p className="text-sm text-muted-foreground">
                 {community.description}
               </p>
-              <Button variant="outline" className="w-full">
+              <Button className="w-full bg-slate-50 hover:bg-slate-200 border border-slate-300 text-indigo-600 hover:text-indigo-700 shadow-inner">
                 Join Community
               </Button>
             </div>
@@ -37,14 +37,14 @@ const Community = () => {
       </section>
 
       <section className="space-y-4">
-        <h2 className="text-2xl font-semibold">Recent Discussions</h2>
+        <h2 className="text-2xl font-semibold text-slate-800">Recent Discussions</h2>
         <div className="space-y-3">
           {discussions.map((discussion) => (
             <div
               key={discussion.title}
               className="p-4 rounded-xl glass-morphism space-y-2"
             >
-              <h3 className="font-medium">{discussion.title}</h3>
+              <h3 className="font-medium text-slate-700">{discussion.title}</h3>
               <p className="text-sm text-muted-foreground">
                 {discussion.excerpt}
               </p>

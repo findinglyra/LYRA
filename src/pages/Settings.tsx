@@ -60,14 +60,14 @@ const Settings = () => {
         <div className="space-y-4">
           {settingSections.map((section) => (
             <div key={section.title} className="space-y-2">
-              <h3 className="text-sm font-medium text-muted-foreground">
+              <h3 className="text-sm font-medium text-slate-600">
                 {section.title}
               </h3>
               <div className="space-y-2">
                 {section.items.map((item) => (
                   <div
                     key={item.label}
-                    className="flex items-center justify-between p-3 rounded-lg glass-morphism"
+                    className="flex items-center justify-between p-3 rounded-lg bg-white shadow-sm border border-slate-200"
                   >
                     <div className="flex items-center gap-3">
                       <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
@@ -91,8 +91,8 @@ const Settings = () => {
 
         {/* User Info */}
         {user && (
-          <div className="glass-morphism p-3 rounded-lg mb-4">
-            <p className="text-sm text-muted-foreground">Logged in as:</p>
+          <div className="bg-white p-3 rounded-lg shadow-sm border border-slate-200 mb-4">
+            <p className="text-sm text-slate-600">Logged in as:</p>
             <p className="font-medium truncate">{user.email}</p>
           </div>
         )}

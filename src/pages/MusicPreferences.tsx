@@ -57,7 +57,6 @@ const MusicPreferences = () => {
     danceability: 50,
   });
   
-  // Check authentication and profile status
   useEffect(() => {
     if (!user) {
       toast({
@@ -68,143 +67,47 @@ const MusicPreferences = () => {
       navigate("/login");
       return;
     }
-    
-    // Get URL params to prevent redirect loops
+
     const searchParams = new URLSearchParams(window.location.search);
     const preventRedirectLoop = searchParams.get('noRedirect') === 'true';
     const source = searchParams.get('source') || '';
     const noProfileCheck = searchParams.get('noProfileCheck') === 'true';
-    
+
     if (preventRedirectLoop) {
-      // Skip further checks if we're here to prevent a redirect loop
-      console.log(`MusicPreferences: Redirect prevention active (source: ${source}), continuing with form`);
-      return;
+      console.log(`MusicPreferences: Redirect prevention active (source: ${source}), showing form.`);
     }
     
-    // If we have the noProfileCheck flag, skip the entire profile check
-    if (noProfileCheck) {
-      console.log('MusicPreferences: Skipping profile check as requested');
-      return;
+    if (noProfileCheck && !preventRedirectLoop) {
+      console.log('MusicPreferences: Skipping profile data load as requested by noProfileCheck flag.');
+      return; 
     }
 
-    // Set up a flag to detect if we're already doing a check
-    let isCheckingProfile = true;
-    
-    // Check if user already has music preferences and a complete profile
-    const checkProfileStatus = async () => {
+    const loadUserPreferences = async () => {
       try {
         setIsLoading(true);
-        
-        // Check for cached profile data first to avoid unnecessary Supabase calls
-        if (existingProfileCheckCache.has(user.id)) {
-          const cached = existingProfileCheckCache.get(user.id);
-          const now = Date.now();
-          // Use cache if it's less than 30 seconds old
-          if (cached && (now - cached.timestamp < 30000)) {
-            console.log('MusicPreferences: Using cached profile check result');
-            
-            if (cached.hasCompleteProfile) {
-              toast({
-                title: "Profile Already Complete",
-                description: "Your profile is already complete. Redirecting to match page."
-              });
-              
-              setTimeout(() => {
-                navigate('/match');
-              }, 1500);
-              return;
-            }
-            
-            if (cached.hasMusicPreferences) {
-              console.log('MusicPreferences: Using existing music preferences from cache');
-              setPreferences(cached.preferences || preferences);
-            }
-            
-            setIsLoading(false);
-            return;
-          }
-        }
-        
-        // Check if user has music preferences already (minimized to reduce Supabase calls)
-        const existingPrefs = await getProfile(user.id).catch(err => {
-          console.error("MusicPreferences: Error checking existing preferences:", err);
-          return null;
-        });
-        
-        // If music preferences exist, check if user has a complete profile
+        const existingPrefs = await getProfile(user.id); 
         if (existingPrefs) {
-          console.log("MusicPreferences: User already has music preferences");
-          
-          // Populate the form with existing preferences
+          console.log("MusicPreferences: Populating form with existing music preferences.");
           setPreferences(existingPrefs);
-          
-          // Check if user has a complete profile - only if we have music preferences
-          try {
-            const { getUserProfile } = await import('@/services/user-profile');
-            const userProfile = await getUserProfile(user.id);
-            
-            // If they have both music preferences and a complete profile, redirect to match
-            const hasCompleteProfile = !!(userProfile && userProfile.full_name && userProfile.birth_date);
-            
-            // Cache the result to avoid future Supabase calls
-            existingProfileCheckCache.set(user.id, {
-              hasCompleteProfile,
-              hasMusicPreferences: true,
-              preferences: existingPrefs,
-              timestamp: Date.now()
-            });
-            
-            if (hasCompleteProfile) {
-              toast({
-                title: "Profile Already Complete",
-                description: "Your profile is already complete. Redirecting to match page."
-              });
-              
-              // Add a slight delay before redirecting
-              setTimeout(() => {
-                navigate('/match?source=music-preferences');
-              }, 1500);
-              return;
-            }
-          } catch (err) {
-            console.error("MusicPreferences: Error checking user profile:", err);
-          }
         } else {
-          // Cache the negative result to avoid future Supabase calls
-          existingProfileCheckCache.set(user.id, {
-            hasCompleteProfile: false,
-            hasMusicPreferences: false,
-            preferences: null,
-            timestamp: Date.now()
-          });
-          console.log("MusicPreferences: No existing music preferences found");
+          console.log("MusicPreferences: No existing music preferences found for this user.");
         }
       } catch (error) {
-        console.error("MusicPreferences: Error checking profile status:", error);
+        console.error("MusicPreferences: Error fetching existing music preferences:", error);
+        toast({
+          title: "Error Loading Data",
+          description: "Could not load your music preferences. Please try again.",
+          variant: "destructive",
+        });
       } finally {
         setIsLoading(false);
-        isCheckingProfile = false;
       }
     };
-    
-    checkProfileStatus();
-    
-    // Cleanup function
-    return () => {
-      isCheckingProfile = false;
-    };
-  }, [user, navigate, toast, preferences]);
-  
-  // Cache for profile checks to reduce duplicate requests
-  const existingProfileCheckCache = React.useMemo(() => {
-    return new Map<string, {
-      hasCompleteProfile: boolean;
-      hasMusicPreferences: boolean;
-      preferences: MusicPreferences | null;
-      timestamp: number;
-    }>();
-  }, []);
 
+    loadUserPreferences();
+
+  }, [user, navigate, toast]); 
+  
   // Available music genres
   const genres = [
     "Pop", "Rock", "Hip Hop", "R&B", "Jazz", "Classical", "Electronic", 
@@ -333,12 +236,6 @@ const MusicPreferences = () => {
 
       if (updateProfileError) {
         console.error("MusicPreferences: Error updating profile setup_complete status:", updateProfileError);
-        // Optionally: Show a toast to the user that profile status update failed but prefs were saved.
-        // toast({
-        //   title: "Preferences Saved, Profile Status Pending",
-        //   description: "Your music preferences are saved, but there was an issue updating your overall profile status. Please contact support if issues persist.",
-        //   variant: "warning", 
-        // });
       } else {
         console.log("Profile setup_complete status updated successfully for user:", user.id);
         if (invalidateProfileCache) {
@@ -360,7 +257,6 @@ const MusicPreferences = () => {
         console.log("Music preferences verified successfully");
       } catch (verifyError) {
         console.error("Error verifying music preferences:", verifyError);
-        // Continue with success flow even if verification fails
       }
 
       // Show success message
@@ -462,10 +358,10 @@ const MusicPreferences = () => {
               listeningFrequency: value
             }))}
           >
-            <SelectTrigger>
+            <SelectTrigger className="bg-background text-foreground">
               <SelectValue placeholder="Select frequency" />
             </SelectTrigger>
-            <SelectContent>
+            <SelectContent className="bg-popover text-popover-foreground">
               <SelectItem value="constantly">Throughout the day</SelectItem>
               <SelectItem value="daily">Daily</SelectItem>
               <SelectItem value="several_times_week">Several times a week</SelectItem>
@@ -574,10 +470,10 @@ const MusicPreferences = () => {
               concertFrequency: value
             }))}
           >
-            <SelectTrigger>
+            <SelectTrigger className="bg-background text-foreground">
               <SelectValue placeholder="Select frequency" />
             </SelectTrigger>
-            <SelectContent>
+            <SelectContent className="bg-popover text-popover-foreground">
               <SelectItem value="weekly">Weekly</SelectItem>
               <SelectItem value="monthly">Monthly</SelectItem>
               <SelectItem value="quarterly">Every few months</SelectItem>
