@@ -30,7 +30,16 @@ import Careers from "./pages/Careers";
 import Press from "./pages/Press";
 import Privacy from "./pages/Privacy";
 import Terms from "./pages/Terms";
+import StorageSetup from "./pages/StorageSetup";
+import DatabaseSetup from "./pages/DatabaseSetup";
+import TestUserSetup from "./pages/TestUserSetup";
+import QuickFix from "./pages/QuickFix";
 import { Loader2 } from 'lucide-react';
+
+// Import dev utilities (only in development)
+if (import.meta.env.DEV) {
+  import('@/utils/devUtils');
+}
 
 const queryClient = new QueryClient();
 
@@ -89,6 +98,10 @@ const AppContent = () => {
           <Route path="/music" element={<Music />} />
           <Route path="/community" element={<Community />} />
           <Route path="/settings" element={<Settings />} />
+          <Route path="/storage-setup" element={<StorageSetup />} />
+          <Route path="/database-setup" element={<DatabaseSetup />} />
+          <Route path="/test-user-setup" element={<TestUserSetup />} />
+          <Route path="/quick-fix" element={<QuickFix />} />
         </Route>
 
         {/* Not found route */}

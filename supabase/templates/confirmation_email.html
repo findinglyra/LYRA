@@ -3,14 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Confirm Your Findinglyra Account</title>
+    <title>Welcome to LYRA - Confirm Your Email</title>
     <style>
         body {
             margin: 0;
             padding: 0;
-            background-color: #f4f4f8;
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol';
-            color: #333333;
+            background-color: #f8fafc;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            color: #334155;
             line-height: 1.6;
         }
         .container {
@@ -18,101 +18,129 @@
             max-width: 600px;
             margin: 0 auto;
             background-color: #ffffff;
-            border-radius: 8px;
+            border-radius: 10px;
             overflow: hidden;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
         }
         .header {
-            background-color: #7C3AED; /* A vibrant purple, adjust if you have a specific brand color */
+            background: linear-gradient(135deg, #0e86d4, #055c9d);
             padding: 30px 20px;
             text-align: center;
         }
-        .header h1 {
-            margin: 0;
+        .logo {
+            font-size: 32px;
+            font-weight: bold;
             color: #ffffff;
-            font-size: 28px;
-            font-weight: 600;
+            margin-bottom: 10px;
+        }
+        .tagline {
+            color: #68bbe3;
+            font-style: italic;
+            font-size: 16px;
         }
         .content {
             padding: 30px 40px;
-            text-align: left;
+            text-align: center;
         }
         .content p {
             margin: 0 0 20px;
             font-size: 16px;
         }
         .content .greeting {
-            font-size: 18px;
+            font-size: 20px;
             font-weight: 500;
             margin-bottom: 25px;
+            color: #334155;
+        }
+        .features {
+            text-align: left;
+            margin: 20px 0;
+            background: #f8fafc;
+            padding: 20px;
+            border-radius: 8px;
+        }
+        .features ul {
+            margin: 0;
+            padding-left: 20px;
+        }
+        .features li {
+            margin-bottom: 8px;
         }
         .button-container {
             text-align: center;
             margin: 30px 0;
         }
         .button {
-            background-color: #7C3AED; /* Same vibrant purple */
-            color: #ffffff !important; /* Ensure text is white */
-            padding: 15px 30px;
+            background: linear-gradient(135deg, #0e86d4, #055c9d);
+            color: #ffffff !important;
+            padding: 15px 40px;
             text-decoration: none;
-            border-radius: 25px; /* Pill-shaped button */
+            border-radius: 25px;
             font-size: 16px;
-            font-weight: 500;
+            font-weight: 600;
             display: inline-block;
-            transition: background-color 0.3s ease;
+            transition: transform 0.2s ease;
         }
         .button:hover {
-            background-color: #6D28D9; /* Darker shade for hover */
+            transform: translateY(-2px);
         }
         .footer {
-            background-color: #f0f0f0;
+            background-color: #f0f9ff;
             padding: 20px 40px;
             text-align: center;
-            font-size: 12px;
-            color: #777777;
+            font-size: 14px;
+            color: #64748b;
+            border-top: 1px solid #e2e8f0;
         }
         .footer p {
-            margin: 0 0 5px;
+            margin: 5px 0;
         }
         .footer a {
-            color: #7C3AED;
+            color: #0e86d4;
             text-decoration: none;
         }
     </style>
 </head>
 <body>
-    <table width="100%" border="0" cellspacing="0" cellpadding="0" style="background-color: #f4f4f8;">
+    <table width="100%" border="0" cellspacing="0" cellpadding="0" style="background-color: #f8fafc;">
         <tr>
             <td align="center" style="padding: 20px 0;">
                 <table class="container" border="0" cellspacing="0" cellpadding="0">
                     <tr>
                         <td class="header">
-                            <!-- Optional: If you have a logo image URL, you can place it here -->
-                            <!-- <img src="YOUR_LOGO_URL_HERE" alt="Findinglyra Logo" class="logo-placeholder"> -->
-                            <h1>Welcome to Findinglyra!</h1>
+                            <div class="logo">LYRA</div>
+                            <div class="tagline">Where your playlist meets your person</div>
                         </td>
                     </tr>
                     <tr>
                         <td class="content">
-                            <p class="greeting">Hello {{ .Email }},</p> <!-- Added {{ .Email }} placeholder -->
-                            <p>Thanks for signing up for Findinglyra, the place where music connects hearts!</p>
-                            <p>To complete your registration and start discovering your next harmony, please confirm your email address by clicking the button below:</p>
+                            <h2 class="greeting">Welcome to LYRA! 🌟</h2>
+                            <p>We're thrilled to have you join the LYRA community! Your journey to finding meaningful connections through the universal language of music starts now.</p>
+                            
                             <div class="button-container">
-                                <a href="{{ .ConfirmationURL }}" class="button">Confirm Your Email</a>
+                                <a href="{{ .ConfirmationURL }}" class="button">Confirm Email & Start Your Journey</a>
                             </div>
-                            <p>If the button above doesn't work, copy and paste the following link into your web browser:</p>
-                            <p><a href="{{ .ConfirmationURL }}" style="color: #7C3AED; word-break: break-all;">{{ .ConfirmationURL }}</a></p>
-                            <p>Once confirmed, you can complete your profile and dive into the Findinglyra experience.</p>
-                            <p>Excited to have you join our community!</p>
-                            <p>Best,<br>The Findinglyra Team</p>
+                            
+                            <div class="features">
+                                <p><strong>What awaits you:</strong></p>
+                                <ul>
+                                    <li>🎵 Create your unique musical profile</li>
+                                    <li>💫 Discover people who share your musical taste</li>
+                                    <li>🎶 Connect through the songs that move your soul</li>
+                                    <li>✨ Find harmony in both music and relationships</li>
+                                </ul>
+                            </div>
+                            
+                            <p>Ready to find your musical soulmate?</p>
+                            <p>With musical love,<br><strong>The LYRA Team 🎵</strong></p>
                         </td>
                     </tr>
                     <tr>
                         <td class="footer">
-                            <p>&copy; {{ .SiteURL | date "2006" }} Findinglyra. All rights reserved.</p>
-                            <p>If you didn't sign up for Findinglyra, please ignore this email.</p>
-                            <!-- Optional: Add your site URL or support email -->
-                            <!-- <p><a href="{{ .SiteURL }}">findinglyra.com</a></p> -->
+                            <p>If the button doesn't work, copy this link: <a href="{{ .ConfirmationURL }}" style="word-break: break-all;">{{ .ConfirmationURL }}</a></p>
+                            <p>This email was sent to {{ .Email }}</p>
+                            <p>© 2024 LYRA. All rights reserved.</p>
+                            <p>If you didn't sign up for LYRA, you can safely ignore this email.</p>
                         </td>
                     </tr>
                 </table>

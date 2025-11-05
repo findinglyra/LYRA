@@ -2,12 +2,14 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/lib/supabase";
+import { useToast } from "@/hooks/use-toast";
 import { Loader2 } from "lucide-react";
 
 export default function AuthCallback() {
   const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
-  const { validateSession, checkAndRedirect } = useAuth();
+  const { validateSession, enforceAuthRouting } = useAuth();
+  const { toast } = useToast();
 
   useEffect(() => {
     const handleAuthCallback = async () => {
@@ -46,8 +48,12 @@ export default function AuthCallback() {
           
           if (isValid) {
             console.log("Auth successful, redirecting...");
+            toast({
+              title: "Email Confirmed! 🎉",
+              description: "Welcome to LYRA! Let's complete your profile.",
+            });
             // Check for existing profile and redirect accordingly
-            await checkAndRedirect();
+            await enforceAuthRouting(window.location.pathname);
           } else {
             console.error("Invalid session after OAuth");
             setError("Authentication failed. Please try again.");
@@ -69,7 +75,7 @@ export default function AuthCallback() {
     };
 
     handleAuthCallback();
-  }, [navigate, validateSession, checkAndRedirect]);
+  }, [navigate, validateSession, enforceAuthRouting, toast]);
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center p-4">

@@ -19,18 +19,18 @@ interface RateLimitConfig {
 
 // Rate limit configurations by operation type
 const rateLimitConfigs: Record<string, RateLimitConfig> = {
-  // Auth operations are the most strictly limited by Supabase
-  'auth:signUp': { windowMs: 60000, maxRequests: 3, minInterval: 30000 },
-  'auth:signIn': { windowMs: 60000, maxRequests: 5, minInterval: 15000 },
-  'auth:resetPassword': { windowMs: 300000, maxRequests: 3, minInterval: 60000 },
-  'auth:updatePassword': { windowMs: 300000, maxRequests: 3, minInterval: 60000 },
-  'auth:magicLink': { windowMs: 300000, maxRequests: 3, minInterval: 60000 },
+  // Auth operations - made less aggressive for development
+  'auth:signUp': { windowMs: 60000, maxRequests: 5, minInterval: 5000 },
+  'auth:signIn': { windowMs: 60000, maxRequests: 10, minInterval: 2000 },
+  'auth:resetPassword': { windowMs: 300000, maxRequests: 5, minInterval: 30000 },
+  'auth:updatePassword': { windowMs: 300000, maxRequests: 5, minInterval: 30000 },
+  'auth:magicLink': { windowMs: 300000, maxRequests: 5, minInterval: 30000 },
   
-  // Database operations
-  'db:insert': { windowMs: 10000, maxRequests: 15, minInterval: 100 },
-  'db:select': { windowMs: 10000, maxRequests: 20, minInterval: 50 },
-  'db:update': { windowMs: 10000, maxRequests: 15, minInterval: 100 },
-  'db:delete': { windowMs: 10000, maxRequests: 10, minInterval: 200 },
+  // Database operations - made much more lenient for development
+  'db:insert': { windowMs: 10000, maxRequests: 50, minInterval: 10 },
+  'db:select': { windowMs: 10000, maxRequests: 100, minInterval: 10 },
+  'db:update': { windowMs: 10000, maxRequests: 50, minInterval: 10 },
+  'db:delete': { windowMs: 10000, maxRequests: 30, minInterval: 50 },
   
   // Storage operations
   'storage:upload': { windowMs: 60000, maxRequests: 10, minInterval: 1000 },

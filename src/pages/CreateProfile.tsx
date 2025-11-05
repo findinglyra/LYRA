@@ -547,6 +547,30 @@ const CreateProfile = () => {
       const fileName = `${uuidv4()}.${fileExt}`;
       const filePath = `profile-images/${fileName}`;
       
+      // Check if bucket exists and create it if needed
+      const { data: buckets, error: listError } = await supabase.storage.listBuckets();
+      
+      if (listError) {
+        throw new Error(`Error checking storage buckets: ${listError.message}`);
+      }
+      
+      const bucketExists = buckets?.some(bucket => bucket.name === 'user-content');
+      
+      if (!bucketExists) {
+        // Try to create the bucket
+        const { error: createBucketError } = await supabase.storage.createBucket('user-content', {
+          public: true,
+          allowedMimeTypes: ['image/jpeg', 'image/png', 'image/gif', 'image/webp'],
+          fileSizeLimit: 5242880 // 5MB
+        });
+        
+        if (createBucketError) {
+          throw new Error(`Error creating storage bucket: ${createBucketError.message}`);
+        }
+        
+        console.log('Created user-content storage bucket');
+      }
+      
       // Upload file to Supabase Storage
       const { error: uploadError } = await supabase.storage
         .from("user-content")
@@ -668,14 +692,39 @@ const CreateProfile = () => {
       if (imageFile) {
         try {
           finalImageUrl = await uploadProfileImage(imageFile); // Update local variable
-        } catch (error) {
+          setImageUrl(finalImageUrl); // Update state for consistency
+        } catch (error: any) {
           console.error("Error uploading profile image:", error);
+          
+          // Provide specific error messages based on the error type
+          let errorMessage = "Failed to upload profile image. Please try again.";
+          
+          if (error.message?.includes("Bucket not found")) {
+            errorMessage = "Storage not configured. Please contact support or try again later.";
+          } else if (error.message?.includes("File size")) {
+            errorMessage = "Image file is too large. Please use an image under 5MB.";
+          } else if (error.message?.includes("not allowed")) {
+            errorMessage = "Image format not supported. Please use JPEG, PNG, GIF, or WebP.";
+          }
+          
           toast({
-            title: "Image upload failed",
-            description: "Failed to upload profile image. Please try again or use an image URL instead.",
+            title: "Image Upload Failed",
+            description: errorMessage,
             variant: "destructive",
           });
-          return;
+          
+          // Don't return here - allow profile creation without image
+          finalImageUrl = null;
+          console.log("Continuing profile creation without image due to upload error");
+          
+          // Show a secondary toast that we're continuing without the image
+          setTimeout(() => {
+            toast({
+              title: "Continuing Without Image",
+              description: "Your profile will be created without a profile picture. You can add one later.",
+              variant: "default",
+            });
+          }, 2000);
         }
       }
       
